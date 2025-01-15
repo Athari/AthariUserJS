@@ -8,7 +8,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0
+// @version        1.0.0
 // @description    Kinorium.com enhancements: user collections usability, links to extra streaming providers, native lazy loading of images etc.
 // @description:ru Улучшения для Kinorium.com: удобство работы с пользовательскими коллекциями, ссылки на дополнительные онлайн-кинотеатры, нативная ленивая загрузка изображений и т.д.
 // @description:uk Покращення для Kinorium.com: зручність роботи з користувацькими колекціями, посилання на додаткові онлайн-кінотеатри, нативне ліниве завантаження зображень тощо.
@@ -244,7 +244,7 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
         opacity: 0.8;
       }
 
-      .ath-cinema {
+      .ath-cinema:not(#\0) {
         width: 88px;
         height: 32px;
         text-align: center;
