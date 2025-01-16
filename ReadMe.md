@@ -2,6 +2,7 @@
 
 A collection of **user scripts** by [@Athari](/Athari).
 
+* [Culture.ru](#culture)
 * [Kinorium.com](#kinorium)
 
 **See also:** [User CSS](https://github.com/Athari/AthariUserCSS) (@Athari's collection of user styles).
@@ -21,7 +22,7 @@ A collection of **user scripts** by [@Athari](/Athari).
      [Edge](https://microsoftedge.microsoft.com/addons/detail/eeagobfjdenkkddmbclomhiblgggliao) /
      [Firefox](https://addons.mozilla.org/firefox/addon/violentmonkey/)
 
-   * <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16> [Greasemonkey](https://www.greasespot.net/) for
+   * <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16> [<del>Greasemonkey</del>](https://www.greasespot.net/) for
      [Firefox](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/)
 
 2. It is recommended to **put the extension's button on the toolbar** as it'll give access to the currently installed user scripts and their options.
@@ -31,6 +32,15 @@ A collection of **user scripts** by [@Athari](/Athari).
 4. **Click on the ![Install][Install Script Monkey] button** in the top panel to install the script.
 
 5. If at any point you want to **disable or reenable the script**, click on the extension button <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16>, then click on the toggle switch next to the script.
+
+## <a id="culture"/> ![](https://icons.duckduckgo.com/ip3/www.culture.ru.ico) Culture.ru
+
+### Culture.ru – Unlocked [![Install Culture.ru Unlocked Script][Install Script]](Culture/Culture-Unlocked.user.js?raw=1)
+
+Fixes the bug causing the "Видеозапись недоступна для просмотра по решению правообладателя" error message.
+
+* Always display directly hosted videos.
+* Configurable image gallery thumbnail size.
 
 ## <a id="kinorium"/> ![](https://icons.duckduckgo.com/ip3/kinorium.com.ico) Kinorium.com
 

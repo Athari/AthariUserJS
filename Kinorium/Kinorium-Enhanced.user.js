@@ -3,7 +3,7 @@
 // @name:ru        Kinorium.com – Улучшенный [Ath]
 // @name:uk        Kinorium.com – Покращений [Ath]
 // @namespace      kinorium
-// @author         Athari
+// @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
