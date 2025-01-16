@@ -33,7 +33,7 @@ A collection of **user scripts** by [@Athari](/Athari).
 
 5. If at any point you want to **disable or reenable the script**, click on the extension button <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16>, then click on the toggle switch next to the script.
 
-## <a id="culture"/> ![](https://icons.duckduckgo.com/ip3/www.culture.ru.ico) Culture.ru
+## <a id="culture"/> ![](https://www.google.com/s2/favicons?sz=32&domain=culture.ru) Culture.ru
 
 ### Culture.ru – Unlocked [![Install Culture.ru Unlocked Script][Install Script]](Culture/Culture-Unlocked.user.js?raw=1)
 
