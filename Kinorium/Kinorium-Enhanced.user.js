@@ -8,7 +8,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.0
+// @version        1.0.1
 // @description    Kinorium.com enhancements: user collections usability, links to extra streaming providers, native lazy loading of images etc.
 // @description:ru Улучшения для Kinorium.com: удобство работы с пользовательскими коллекциями, ссылки на дополнительные онлайн-кинотеатры, нативная ленивая загрузка изображений и т.д.
 // @description:uk Покращення для Kinorium.com: зручність роботи з користувацькими колекціями, посилання на додаткові онлайн-кінотеатри, нативне ліниве завантаження зображень тощо.
@@ -17,12 +17,14 @@
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @grant          GM_setValue
+// @grant          GM_getResourceText
 // @grant          GM_getResourceURL
 // @grant          GM_info
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
+// @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
 // @resource       img-cinema-default https://images.kinorium.com/web/vod/vod_channels.svg
 // @resource       img-cinema-rezka   https://rezka.ag/templates/hdrezka/images/hdrezka-logo.png
@@ -34,10 +36,6 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
 
 (async () => {
   'use strict';
-
-  S.extendPrototype();
-  console.log("GM info", GM_info);
-  //GM_registerMenuCommand("Config", e => alert(e), { accessKey: 'a', title: "Config Enhancer" });
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const waitForEvent = (o, e) => new Promise(resolve => o.addEventListener(e, resolve, { once: true }));
@@ -139,7 +137,7 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
       return ress(map, { ...params, props: params.props.concat(prop) });
     }
   });
-  const script = new Proxy({}, new class {
+  const scripts = () => new Proxy({}, new class {
     #scripts = {}
     get(_, prop) { return this.#scripts[prop] ?? import(res.script[prop].url).then(js => this.#scripts[prop] = js) }
   });
@@ -156,6 +154,7 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
   };
 
   const hostKinorium = "*\.kinorium\.com";
+  const res = ress(), script = scripts();
   const el = els(document, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .statuses",
@@ -170,7 +169,11 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
   const opt = opts({
     listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true, nativeLazyImages: true,
   });
-  const res = ress();
+
+  S.extendPrototype();
+  Object.assign(globalThis, URLPattern ? null : await script.urlpattern);
+  console.log("GM info", GM_info);
+  //GM_registerMenuCommand("Config", e => alert(e), { accessKey: 'a', title: "Config Enhancer" });
 
   const { USER_ID: userId, PRO: userPro } = unsafeWindow;
   const language = { ua: 'uk' }[unsafeWindow.LANGUAGE] ?? unsafeWindow.LANGUAGE;
@@ -244,6 +247,9 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
         opacity: 0.8;
       }
 
+      .film-page__buttons-cinema li {
+        vertical-align: top;
+      }
       .ath-cinema:not(#\0) {
         width: 88px;
         height: 32px;
@@ -296,6 +302,9 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
         }
         .title {
           max-width: 240rem !important;
+        }
+        label {
+          white-space: nowrap;
         }
       }
     </style>`);

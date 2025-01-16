@@ -7,7 +7,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.0
+// @version        1.0.1
 // @description    Fixes the bug causing the "Видеозапись недоступна для просмотра по решению правообладателя" error message.
 // @description:ru Исправляет баг, приводящий к появлению сообщения "Видеозапись недоступна для просмотра по решению правообладателя".
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=culture.ru
@@ -16,19 +16,19 @@
 // @grant          GM_getValue
 // @grant          GM_setValue
 // @grant          GM_getResourceText
+// @grant          GM_getResourceURL
 // @grant          GM_info
 // @run-at         document-start
 // @require        https://cdnjs.cloudflare.com/ajax/libs/string.js/3.3.3/string.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.18/hls.light.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js
-// @resource       css-plyr https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.css
+// @resource       script-urlpattern https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
+// @resource       css-plyr          https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.css
 // @tag            athari
 // ==/UserScript==
 
 (async () => {
   'use strict';
-
-  S.extendPrototype();
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const waitForEvent = (o, e) => new Promise(resolve => o.addEventListener(e, resolve, { once: true }));
@@ -80,9 +80,30 @@
     get: (t, prop) => GM_getValue(prop, t[prop]),
     set: (t, prop, value) => (GM_setValue(prop, value), true),
   });
+  const ress = (map = Object.fromEntries(Object.entries(GM_info.script.resources).map(r => [ r[1].name, r[1] ])), params = { props: [], wait: false }) => new Proxy(map, new class {
+    //constructor() { console.log("res", { map, ...params }) }
+    #fluent = new class {
+      get #path() { return params.props.join("-") }
+      get wait() { return ress(map, { ...params, wait: true }) }
+      get bytes() { return map[this.#path].content } // not portable
+      get url() { return map[this.#path].url }
+      get data() { return params.wait ? GM.getResourceUrl(this.#path) : GM_getResourceURL(this.#path) }
+      get text() { return params.wait ? GM.getResourceText(this.#path) : GM_getResourceText(this.#path) }
+    }
+    get(_, prop) {
+      if (isPropFluent(prop, this.#fluent))
+        return this.#fluent[prop];
+      return ress(map, { ...params, props: params.props.concat(prop) });
+    }
+  });
+  const scripts = () => new Proxy({}, new class {
+    #scripts = {}
+    get(_, prop) { return this.#scripts[prop] ?? import(res.script[prop].url).then(js => this.#scripts[prop] = js) }
+  });
 
   await waitForEvent(document, 'DOMContentLoaded');
 
+  const res = ress(), script = scripts();
   const el = els(document, {
     mainHeader: "main > div:has(h1)",
     footer: "footer",
@@ -94,6 +115,11 @@
   const opt = opts({
     hideOriginal: true, thumbHeight: 240,
   });
+  const data = unsafeWindow.__NEXT_DATA__;
+
+  S.extendPrototype();
+  Object.assign(globalThis, URLPattern ? null : await script.urlpattern);
+
   const strs = {
     en: {
       opt: {
@@ -113,7 +139,6 @@
   };
   const language = navigator.languages.filter(l => strs[l] != null)[0] ?? strs[navigator.language] ?? 'en';
   const str = strs[language];
-  const data = unsafeWindow.__NEXT_DATA__;
 
   el.tag.head.insertAdjacentHTML('beforeEnd', /*html*/`
     <style>
@@ -169,7 +194,7 @@
         gap: 8px 32px;
       }
 
-      ${GM_getResourceText('css-plyr')}
+      ${res.css.plyr.text}
 
       @media screen and (max-width: 480px) {
         .plyr .plyr__controls button:is([data-plyr=pip], [data-plyr=mute], [data-plyr=volume]) {
