@@ -7,7 +7,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.0
+// @version        1.1.0
 // @description    Premier.one enhancements: fixed time range filtering, IMDB and Kinopoisk ratings in lists, better episode titles, expanded lists with direct links, extra filters etc.
 // @description:ru Улучшения для Premier.one: исправление фильтрации по годам, рейтинги Кинопоиска и IMDB в списках, полные заголовки эпизодов, раскрытые списки с прямыми ссылками, дополнительные фильтры и т.д.
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=premier.one
@@ -131,6 +131,7 @@
   const premierHost = "premier.one";
   const res = ress(), script = scripts();
   const el = els(document, {
+    fakeLinks: "div[to]",
     seasons: ".w-show-card-seasons-and-series__tabs", episodes: ".w-show-card-seasons-and-series__slide:not(.ath-linkified)",
     main: ".l-main", btnCancelNext: ".f-player-recommendation__cancel",
   });
@@ -365,14 +366,18 @@
           padding: .75rem 1rem;
         }
       }
-      .m-slider {
-        .m-slider__wrapper {
-          display: flex;
-          flex-flow: row wrap;
-        }
-        .m-slider__button-prev,
-        .m-slider__button-next {
-          display: none;
+      .m-section:not(.w-promo-slider) {
+        .m-section__content:not(.l-container-boundless) {
+          .m-slider {
+            .m-slider__wrapper {
+              display: flex;
+              flex-flow: row wrap;
+            }
+            .m-slider__button-prev,
+            .m-slider__button-next {
+              display: none;
+            }
+          }
         }
       }
       .ath-poster-ratings {
@@ -397,19 +402,32 @@
       }
     </style>`);
 
+  const setElementTagName = (elSource, tagName) => {
+    const el = document.createElement(tagName);
+    while (elSource.firstChild != null)
+      el.appendChild(elSource.firstChild);
+    for (let i = 0; i < elSource.attributes.length; i++)
+      el.attributes.setNamedItem(elSource.attributes[i].cloneNode());
+    elSource.replaceWith(el);
+    return el;
+  };
   const linkifyEpisodes = () => {
-    if (el.seasons == null)
-      return;
-    const propSeasons = props(el.seasons);
-    const [ seasonsCount, currentSeason ] = [ propSeasons['--m-tabs-items-count'], propSeasons['--m-tabs-active-index'] ];
-    const murl = matchLocation(premierHost, { pathname: "/show/:videoSlug{/*}?" });
-    if (!(seasonsCount > 0) || murl == null)
-      return;
-    for (let elEpisode of el.all.episodes) {
-      const episodeIndex = +elEpisode.getAttribute('index') + 1;
-      elEpisode.classList.add('ath-linkified');
-      elEpisode.querySelector(".e-poster").insertAdjacentHTML('beforeEnd', /*html*/`
-        <a class="ath-episode-link" href="/show/${murl.videoSlug}/season/${currentSeason}/episode/${episodeIndex}"></a>`);
+    let murl = null;
+    for (let elFakeLink of el.all.fakeLinks) {
+      elFakeLink.setAttribute('href', elFakeLink.getAttribute('to'));
+      setElementTagName(elFakeLink, 'A');
+    }
+    if (el.seasons != null) {
+      const propSeasons = props(el.seasons);
+      const [ seasonsCount, currentSeason ] = [ propSeasons['--m-tabs-items-count'], propSeasons['--m-tabs-active-index'] ];
+      if (seasonsCount > 0 && (murl = matchLocation(premierHost, { pathname: "/show/:videoSlug{/*}?" })) != null) {
+        for (let elEpisode of el.all.episodes) {
+          const episodeIndex = +elEpisode.getAttribute('index') + 1;
+          elEpisode.classList.add('ath-linkified');
+          elEpisode.querySelector(".e-poster").insertAdjacentHTML('beforeEnd', /*html*/`
+            <a class="ath-episode-link" href="/show/${murl.videoSlug}/season/${currentSeason}/episode/${episodeIndex}"></a>`);
+        }
+      }
     }
   };
 
