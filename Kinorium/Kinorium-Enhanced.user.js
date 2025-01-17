@@ -32,8 +32,6 @@
 // @tag            athari
 // ==/UserScript==
 
-unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe style="display: none">`), document.body.lastChild.contentWindow.console);
-
 (async () => {
   'use strict';
 
@@ -170,8 +168,10 @@ unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe s
     listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true, nativeLazyImages: true,
   });
 
+  await waitFor(() => document.body);
+  unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe style="display: none">`), document.body.lastChild.contentWindow.console);
   S.extendPrototype();
-  Object.assign(globalThis, URLPattern ? null : await script.urlpattern);
+  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
   console.log("GM info", GM_info);
   //GM_registerMenuCommand("Config", e => alert(e), { accessKey: 'a', title: "Config Enhancer" });
 

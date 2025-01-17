@@ -118,7 +118,7 @@
   const data = unsafeWindow.__NEXT_DATA__;
 
   S.extendPrototype();
-  Object.assign(globalThis, URLPattern ? null : await script.urlpattern);
+  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
 
   const strs = {
     en: {

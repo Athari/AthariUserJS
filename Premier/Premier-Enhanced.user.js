@@ -137,7 +137,7 @@
   });
 
   S.extendPrototype();
-  Object.assign(globalThis, URLPattern ? null : await script.urlpattern);
+  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
 
   let trackInfo = {}, trackInfo2 = {};
 
