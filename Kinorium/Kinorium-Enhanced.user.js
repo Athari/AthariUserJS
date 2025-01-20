@@ -2,13 +2,13 @@
 // @name           Kinorium.com – Enhanced [Ath]
 // @name:ru        Kinorium.com – Улучшенный [Ath]
 // @name:uk        Kinorium.com – Покращений [Ath]
-// @namespace      kinorium
+// @namespace      athari
 // @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.1
+// @version        1.0.2
 // @description    Kinorium.com enhancements: user collections usability, links to extra streaming providers, native lazy loading of images etc.
 // @description:ru Улучшения для Kinorium.com: удобство работы с пользовательскими коллекциями, ссылки на дополнительные онлайн-кинотеатры, нативная ленивая загрузка изображений и т.д.
 // @description:uk Покращення для Kinorium.com: зручність роботи з користувацькими колекціями, посилання на додаткові онлайн-кінотеатри, нативне ліниве завантаження зображень тощо.
@@ -23,6 +23,7 @@
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.2.2/monkeyutils.u.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
@@ -33,126 +34,13 @@
 // ==/UserScript==
 
 (async () => {
-  'use strict';
+  'use strict'
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const waitForEvent = (o, e) => new Promise(resolve => o.addEventListener(e, resolve, { once: true }));
-  const waitFor = async (predicate, ms = +Infinity) => {
-    for (let r, timeout = Date.now() + ms; Date.now() < timeout; await delay(100))
-      if (r = await predicate())
-        return r;
-    return null;
-  };
-  const withTimeout = (ms, promise) => {
-    let timer = null;
-    const timeout = new Promise((_, reject) => timer = setTimeout(() => reject(new Error(`Timed out after ${ms} ms.`)), ms));
-    return Promise.race([ promise, timeout ]).finally(() => clearTimeout(timer));
-  };
-  const isObject = (item) => item && typeof item === 'object' && !Array.isArray(item);
-  const assignDeep = (target, ...sources) => {
-    if (!sources.length)
-      return target;
-    const source = sources.shift();
-    if (isObject(target) && isObject(source)) {
-      for (const key in source) {
-        if (isObject(source[key])) {
-          if (!target[key])
-            Object.assign(target, { [key]: {} });
-          assignDeep(target[key], source[key]);
-        } else {
-          Object.assign(target, { [key]: source[key] });
-        }
-      }
-    }
-    return assignDeep(target, ...sources);
-  }
-  const h = s => S(s).escapeHTML();
-  const u = s => h(encodeURIComponent(s));
-  const fstr = (s, ...args) => s.replace(/%(\d+)%/g, (m, i) => args[+i]);
-  const matchLocation = (h, o = {}, l = null) => {
-    const p = new URLPattern({ hostname: `(www\.)?${h}`, ...o }).exec(l ?? location.href);
-    return p == null ? p : { ...p, ...p.hostname.groups, ...p.pathname.groups, ...p.search.gropus, ...p.hash.groups };
-  };
-  const adjustURLSearch = (u, o) => {
-    const base = u instanceof URL || u instanceof Location ? u : new URL(u);
-    return new URL('?' + new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(base.search)), ...o }), base.href).toString();
-  }
-  const adjustLocationSearch = o => adjustURLSearch(location, o);
-  const attempt = (actionOrName, action = null) => {
-    const handleError = ex => console.log(`Failed to ${action != null ? actionOrName : "perform action"} at location:`, location.href, "error:", ex);
-    try {
-      let ret = (action ?? actionOrName)();
-      if (ret instanceof Promise)
-        ret = ret.catch(handleError);
-      return ret;
-    } catch(ex) {
-      handleError(ex);
-    }
-  };
-  const throwError = s => { throw new Error(s) };
-  const isPropFluent = (prop, fluent) => Object.getPrototypeOf(fluent).hasOwnProperty(prop);
-  const els = (el = document, map = {}, params = { method: 'querySelector', syntax: (o, p) => o[p] ?? p, wait: false, wrap: null }) => new Proxy(map, new class {
-    //constructor() { console.log("query", { el, map, ...params }) }
-    #fluent = new class {
-      get self() { return el }
-      get all() { return els(el, map, { ...params, method: 'querySelectorAll' }) }
-      get is() { return els(el, map, { ...params, method: 'matches' }) }
-      get parent() { return els(el, map, { ...params, method: 'closest' }) }
-      get tag() { return els(el, map, { ...params, syntax: (o, p) => p }) }
-      get id() { return els(el, map, { ...params, syntax: (o, p) => `#${p}` }) }
-      get cls() { return els(el, map, { ...params, syntax: (o, p) => `.${p}` }) }
-      get wait() { return els(el, map, { ...params, wait: true }) }
-      get wrap() { return els(el, map, { ...params, wrap: map }) }
-      wraps(wrap) { return els(el, map, { ...params, wrap }) }
-    }
-    get(t, prop) {
-      if (typeof t[prop] == 'object')
-        return els(el, t[prop], params);
-      if (isPropFluent(prop, this.#fluent))
-        return this.#fluent[prop];
-      const call = () => el[params.method](params.syntax(t, prop) ?? throwError(prop));
-      const wrap = params.wrap == null ? (r => r) : (r => r == null ? null : els(r, params.wrap));
-      return params.method == 'querySelectorAll' ? [...call()].map(wrap) : params.wait ? waitFor(call).then(wrap) : wrap(call());
-    }
-  });
-  const opts = (map) => new Proxy(map, {
-    get: (t, prop) => GM_getValue(prop, t[prop]),
-    set: (t, prop, value) => (GM_setValue(prop, value), true),
-  });
-  const ress = (map = Object.fromEntries(Object.entries(GM_info.script.resources).map(r => [ r[1].name, r[1] ])), params = { props: [], wait: false }) => new Proxy(map, new class {
-    //constructor() { console.log("res", { map, ...params }) }
-    #fluent = new class {
-      get #path() { return params.props.join("-") }
-      get wait() { return ress(map, { ...params, wait: true }) }
-      get bytes() { return map[this.#path].content }
-      get url() { return map[this.#path].url }
-      get data() { return params.wait ? GM.getResourceUrl(this.#path) : GM_getResourceURL(this.#path) }
-      get text() { return params.wait ? GM.getResourceText(this.#path) : GM_getResourceText(this.#path) }
-    }
-    get(_, prop) {
-      if (isPropFluent(prop, this.#fluent))
-        return this.#fluent[prop];
-      return ress(map, { ...params, props: params.props.concat(prop) });
-    }
-  });
-  const scripts = () => new Proxy({}, new class {
-    #scripts = {}
-    get(_, prop) { return this.#scripts[prop] ?? import(res.script[prop].url).then(js => this.#scripts[prop] = js) }
-  });
-  const overrideProperty = (o, name, override) => {
-    let value;
-    if (Object.hasOwn(o, name))
-      attempt(`delete ${name} property`, () =>
-        delete o[name]);
-    attempt(`define ${name} property`, () =>
-      Object.defineProperty(o, name, {
-        get: () => value,
-        set: v => value = override(v),
-      }));
-  };
+  const { assignDeep, delay, waitForEvent, h, u, f, matchLocation, attempt, overrideProperty, reviveConsole, ress, scripts, els, opts } =
+    athari.monkeyutils;
 
   const hostKinorium = "*\.kinorium\.com";
-  const res = ress(), script = scripts();
+  const res = ress(), script = scripts(res);
   const el = els(document, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .statuses",
@@ -168,8 +56,7 @@
     listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true, nativeLazyImages: true,
   });
 
-  await waitFor(() => document.body);
-  unsafeWindow.console = (document.body.insertAdjacentHTML('beforeEnd', `<iframe style="display: none">`), document.body.lastChild.contentWindow.console);
+  await reviveConsole();
   S.extendPrototype();
   Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
   console.log("GM info", GM_info);
