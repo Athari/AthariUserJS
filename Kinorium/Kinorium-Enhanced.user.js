@@ -8,7 +8,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.2
+// @version        1.0.3
 // @description    Kinorium.com enhancements: user collections usability, links to extra streaming providers, native lazy loading of images etc.
 // @description:ru Улучшения для Kinorium.com: удобство работы с пользовательскими коллекциями, ссылки на дополнительные онлайн-кинотеатры, нативная ленивая загрузка изображений и т.д.
 // @description:uk Покращення для Kinorium.com: зручність роботи з користувацькими колекціями, посилання на додаткові онлайн-кінотеатри, нативне ліниве завантаження зображень тощо.
@@ -55,15 +55,6 @@
   const opt = opts({
     listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true, nativeLazyImages: true,
   });
-
-  await reviveConsole();
-  S.extendPrototype();
-  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
-  console.log("GM info", GM_info);
-  //GM_registerMenuCommand("Config", e => alert(e), { accessKey: 'a', title: "Config Enhancer" });
-
-  const { USER_ID: userId, PRO: userPro } = unsafeWindow;
-  const language = { ua: 'uk' }[unsafeWindow.LANGUAGE] ?? unsafeWindow.LANGUAGE;
   const strs = {
     en: {
       listUserCollections: "List user collections",
@@ -87,13 +78,21 @@
       watchMovieOn: "дивитися «%0%» на %1%",
     },
   };
-  const str = strs[language] ?? strs.en;
 
-  let murl = null;
+  await reviveConsole();
+  S.extendPrototype();
+  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
+  console.debug("GM info", GM_info);
+  //GM_registerMenuCommand("Config", e => alert(e), { accessKey: 'a', title: "Config Enhancer" });
 
   //overrideProperty(unsafeWindow, 'loadedTimestamp', v => (v.setFullYear(3000), v));
 
   await waitForEvent(document, 'DOMContentLoaded');
+  const { USER_ID: userId, PRO: userPro } = unsafeWindow;
+  const language = { ua: 'uk' }[unsafeWindow.LANGUAGE] ?? unsafeWindow.LANGUAGE;
+  const str = strs[language] ?? strs.en;
+
+  let murl = null;
 
   el.tag.head.insertAdjacentHTML('beforeEnd', /*html*/`
     <style>
@@ -223,7 +222,7 @@
   attempt("list user collections under movie title", () => {
     for (let elCache of el.wrap.all.collectionCaches) {
       const cache = JSON.parse(elCache.self.dataset.cache);
-      console.log("collection cache", cache);
+      console.debug("collection cache", cache);
       let { items: movies, ulist: collections } = cache;
       userCollections = userCollections.concat(collections);
       if (!opt.listUserCollections || movies == null || elCache.parent.lstCollection == null)
@@ -265,7 +264,7 @@
       ];
       el.lstCinemaButtons.insertAdjacentHTML('beforeEnd', cinemas.map(c => /*html*/`
         <li>
-          <a title='${h(fstr(str.watchMovieOn, movie.name, c.name))}' href="${c.url}" target="_top">
+          <a title='${h(f(str.watchMovieOn, movie.name, c.name))}' href="${c.url}" target="_top">
             <div class="ath-cinema ath-cinema-${c.id}"></div>
           </a>
         </li>`).join(""));
@@ -286,7 +285,7 @@
   };
 
   [ 'click', 'mouseup' ].forEach(e => document.addEventListener(e, async e => {
-    console.log("document event", e.type, e.target, e);
+    console.debug("document event", e.type, e.target, e);
     const ctl = ctls(e.target);
     const pctl = ctls(e.target.parentElement);
     // Collection list checkbox
