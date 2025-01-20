@@ -1,0 +1,24 @@
+{
+  "name": "@athari/monkeyutils",
+  "version": "0.2.2",
+  "description": "Athari's utils for userscripts.",
+  "author": "Athari (https://github.com/Athari)",
+  "license": "MIT",
+  "keywords": [ "userscripts", "tampermonkey", "violentmonkey" ],
+  "main": "monkeyutils.u.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "homepage": "https://github.com/Athari/AthariUserJS#readme",
+  "bugs": {
+    "url": "https://github.com/Athari/AthariUserJS/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Athari/AthariUserJS.git",
+    "directory": "@athari-monkeyutils"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
