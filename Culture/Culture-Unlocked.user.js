@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name           Culture.ru – Unlocked [Ath]
 // @name:ru        Culture.ru – Отпёртый [Ath]
-// @namespace      culture.ru
+// @namespace      athari
 // @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.1
+// @version        1.0.2
 // @description    Fixes the bug causing the "Видеозапись недоступна для просмотра по решению правообладателя" error message.
 // @description:ru Исправляет баг, приводящий к появлению сообщения "Видеозапись недоступна для просмотра по решению правообладателя".
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=culture.ru
@@ -19,7 +19,8 @@
 // @grant          GM_getResourceURL
 // @grant          GM_info
 // @run-at         document-start
-// @require        https://cdnjs.cloudflare.com/ajax/libs/string.js/3.3.3/string.min.js
+// @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.2.2/monkeyutils.u.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.18/hls.light.min.js
 // @require        https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js
 // @resource       script-urlpattern https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
@@ -28,82 +29,14 @@
 // ==/UserScript==
 
 (async () => {
-  'use strict';
+  'use strict'
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const waitForEvent = (o, e) => new Promise(resolve => o.addEventListener(e, resolve, { once: true }));
-  const waitFor = async (predicate, ms = +Infinity) => {
-    for (let r, timeout = Date.now() + ms; Date.now() < timeout; await delay(100))
-      if (r = await predicate())
-        return r;
-    return null;
-  };
-  const h = s => S(s).escapeHTML();
-  const attempt = (actionOrName, action = null) => {
-    const handleError = ex => console.log(`Failed to ${action != null ? actionOrName : "perform action"} at location:`, location.href, "error:", ex);
-    try {
-      let ret = (action ?? actionOrName)();
-      if (ret instanceof Promise)
-        ret = ret.catch(handleError);
-      return ret;
-    } catch(ex) {
-      handleError(ex);
-    }
-  };
-  const throwError = s => { throw new Error(s) };
-  const isPropFluent = (prop, fluent) => Object.getPrototypeOf(fluent).hasOwnProperty(prop);
-  const els = (el = document, map = {}, params = { method: 'querySelector', syntax: (o, p) => o[p] ?? p, wait: false, wrap: null }) => new Proxy(map, new class {
-    //constructor() { console.log("query", { el, map, ...params }) }
-    #fluent = new class {
-      get self() { return el }
-      get all() { return els(el, map, { ...params, method: 'querySelectorAll' }) }
-      get is() { return els(el, map, { ...params, method: 'matches' }) }
-      get parent() { return els(el, map, { ...params, method: 'closest' }) }
-      get tag() { return els(el, map, { ...params, syntax: (o, p) => p }) }
-      get id() { return els(el, map, { ...params, syntax: (o, p) => `#${p}` }) }
-      get cls() { return els(el, map, { ...params, syntax: (o, p) => `.${p}` }) }
-      get wait() { return els(el, map, { ...params, wait: true }) }
-      get wrap() { return els(el, map, { ...params, wrap: map }) }
-      wraps(wrap) { return els(el, map, { ...params, wrap }) }
-    }
-    get(t, prop) {
-      if (typeof t[prop] == 'object')
-        return els(el, t[prop], params);
-      if (isPropFluent(prop, this.#fluent))
-        return this.#fluent[prop];
-      const call = () => el[params.method](params.syntax(t, prop) ?? throwError(prop));
-      const wrap = params.wrap == null ? (r => r) : (r => r == null ? null : els(r, params.wrap));
-      return params.method == 'querySelectorAll' ? [...call()].map(wrap) : params.wait ? waitFor(call).then(wrap) : wrap(call());
-    }
-  });
-  const opts = (map) => new Proxy(map, {
-    get: (t, prop) => GM_getValue(prop, t[prop]),
-    set: (t, prop, value) => (GM_setValue(prop, value), true),
-  });
-  const ress = (map = Object.fromEntries(Object.entries(GM_info.script.resources).map(r => [ r[1].name, r[1] ])), params = { props: [], wait: false }) => new Proxy(map, new class {
-    //constructor() { console.log("res", { map, ...params }) }
-    #fluent = new class {
-      get #path() { return params.props.join("-") }
-      get wait() { return ress(map, { ...params, wait: true }) }
-      get bytes() { return map[this.#path].content } // not portable
-      get url() { return map[this.#path].url }
-      get data() { return params.wait ? GM.getResourceUrl(this.#path) : GM_getResourceURL(this.#path) }
-      get text() { return params.wait ? GM.getResourceText(this.#path) : GM_getResourceText(this.#path) }
-    }
-    get(_, prop) {
-      if (isPropFluent(prop, this.#fluent))
-        return this.#fluent[prop];
-      return ress(map, { ...params, props: params.props.concat(prop) });
-    }
-  });
-  const scripts = () => new Proxy({}, new class {
-    #scripts = {}
-    get(_, prop) { return this.#scripts[prop] ?? import(res.script[prop].url).then(js => this.#scripts[prop] = js) }
-  });
+  // Test URL: https://www.culture.ru/live/movies/3183/zimnyaya-skazka
 
-  await waitForEvent(document, 'DOMContentLoaded');
+  const { waitForEvent, h, attempt, ress, scripts, els, opts } =
+    athari.monkeyutils;
 
-  const res = ress(), script = scripts();
+  const res = ress(), script = scripts(res);
   const el = els(document, {
     mainHeader: "main > div:has(h1)",
     footer: "footer",
@@ -115,11 +48,6 @@
   const opt = opts({
     hideOriginal: true, thumbHeight: 240,
   });
-  const data = unsafeWindow.__NEXT_DATA__;
-
-  S.extendPrototype();
-  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
-
   const strs = {
     en: {
       opt: {
@@ -139,6 +67,12 @@
   };
   const language = navigator.languages.filter(l => strs[l] != null)[0] ?? strs[navigator.language] ?? 'en';
   const str = strs[language];
+
+  S.extendPrototype();
+  Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
+
+  await waitForEvent(document, 'DOMContentLoaded');
+  const data = unsafeWindow.__NEXT_DATA__;
 
   el.tag.head.insertAdjacentHTML('beforeEnd', /*html*/`
     <style>
@@ -247,7 +181,7 @@
       </div>`);
     const { movie } = data.props.pageProps;
     for (let mat of movie.materials) {
-      console.log("material", mat.type, mat);
+      console.debug("material", mat.type, mat);
       const file = mat.files[0];
       switch (mat.type) {
         case 'video':
@@ -292,24 +226,22 @@
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           attempt("init video player", () => {
             const qualities = [0].concat(hls.levels.map(l => l.height).reverse());
-            options.quality = {
-              default: 0,
-              options: qualities,
-              forced: true,
-              onChange: (v) => hls.currentLevel = v == 0 ? -1 : qualities.findIndex(l => l.height == v),
-            };
-            player = new Plyr(video, options);
-            player.on('play', () => hls.startLoad());
-            player.on('qualitychange', () => {
-              if (player.currentTime != 0)
-                hls.startLoad();
+            player = new Plyr(video, {
+              ...options,
+              quality: {
+                default: 0, options: qualities, forced: true,
+                onChange: (v) => hls.currentLevel = v == 0 ? -1 : qualities.findIndex(l => l.height == v),
+              },
+              listeners: {
+                play: () => hls.startLoad(),
+                qualitychange: () => player.currentTime != 0 && hls.startLoad(),
+              },
             });
-            console.log({ hls, player });
+            console.debug({ hls, player });
           });
         });
-        hls.on(Hls.Events.LEVEL_SWITCHED, function (e, data) {
-          el.lblPlyrAuto.innerText = hls.autoLevelEnabled ? `Auto (${hls.levels[data.level].height}p)` : "Auto";
-        });
+        hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) =>
+          el.lblPlyrAuto.innerText = hls.autoLevelEnabled ? `Auto (${hls.levels[data.level].height}p)` : "Auto");
         hls.loadSource(video.dataset.src);
         hls.attachMedia(video);
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
