@@ -10,20 +10,20 @@
 // @name:ka        Culture.ru – განბლოკილი [Ath]
 // @description    Fixes the bug causing the "Видеозапись недоступна для просмотра по решению правообладателя" error message.
 // @description:ru Исправляет баг, приводящий к появлению сообщения "Видеозапись недоступна для просмотра по решению правообладателя".
-// @description:uk Виправляє баг, що призводить до появи повідомлення "Відеозапис недоступний для перегляду за рішенням правовласника".
-// @description:be Іспраўляе баг, які прыводзіць да паўстання паведамлення "Відэазапіс недаступны для прагляду па рашэнні праваўладальніка".
-// @description:bg Отстранява грешката, която води до появата на съобщение "Видеозаписът не е достъпен за гледане по решение на правоносителя".
-// @description:tt Хатаны төзәтә, ул "Видеоязманы карау хокук иясе карары буенча мөмкин түгел" дигән хәбәр барлыкка килүгә китерә.
-// @description:sl Odpravlja napako, ki povzroča pojav sporočila "Videoposnetek ni na voljo za ogled na podlagi odločitve imetnika avtorskih pravic".
-// @description:sr Ispravlja bag koji dovodi do pojavljivanja poruke "Video zapis nije dostupan za gledanje na osnovu odluke vlasnika autorskih prava".
-// @description:ka ფიქსირებს ბაგს, რომელიც იწვევს "ვიდეოჩანაწერი უწვდომელია ნახვად ავტორის უფლებამფლობელის გადაწყვეტილების გამო" შეტყობინების გამოჩენას.
+// @description:uk Виправляє баг, що призводить до появи повідомлення "Видеозапись недоступна для просмотра по решению правообладателя".
+// @description:be Іспраўляе баг, які прыводзіць да паўстання паведамлення "Видеозапись недоступна для просмотра по решению правообладателя".
+// @description:bg Отстранява грешката, която води до появата на съобщение "Видеозапись недоступна для просмотра по решению правообладателя".
+// @description:tt Хатаны төзәтә, ул "Видеозапись недоступна для просмотра по решению правообладателя" дигән хәбәр барлыкка килүгә китерә.
+// @description:sl Odpravlja napako, ki povzroča pojav sporočila "Видеозапись недоступна для просмотра по решению правообладателя".
+// @description:sr Ispravlja bag koji dovodi do pojavljivanja poruke "Видеозапись недоступна для просмотра по решению правообладателя".
+// @description:ka ფიქსირებს ბაგს, რომელიც იწვევს "Видеозапись недоступна для просмотра по решению правообладателя" შეტყობინების გამოჩენას.
 // @namespace      athari
 // @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.3
+// @version        1.0.4
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=culture.ru
 // @match          https://*.culture.ru/*
 // @grant          unsafeWindow
@@ -79,7 +79,7 @@
       videoErrorMessage: "Видеозапись недоступна для просмотра по решению правообладателя",
     }
   };
-  const language = navigator.languages.filter(l => strs[l] != null)[0] ?? strs[navigator.language] ?? 'en';
+  const language = navigator.languages.filter(l => strs[l] != null)[0] ?? strs[navigator.language] ?? 'ru';
   const str = strs[language];
 
   S.extendPrototype();
