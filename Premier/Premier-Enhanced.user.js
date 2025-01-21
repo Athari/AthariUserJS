@@ -1,15 +1,29 @@
 // ==UserScript==
 // @name           Premier.one – Enhanced [Ath]
 // @name:ru        Premier.one – Улучшенный [Ath]
+// @name:uk        Premier.one – Покращений [Ath]
+// @name:be        Premier.one – Удасканалены [Ath]
+// @name:bg        Premier.one – Подобрен [Ath]
+// @name:tt        Premier.one – Яхшыртылган [Ath]
+// @name:sl        Premier.one – Izboljšan [Ath]
+// @name:sr        Premier.one – Poboljšan [Ath]
+// @name:ka        Premier.one – გაუმჯობესებული [Ath]
+// @description    Premier.one enhancements: fixed time range filtering, IMDB and Kinopoisk ratings in lists, better episode titles, expanded lists with direct links, extra filters etc.
+// @description:ru Улучшения для Premier.one: исправление фильтрации по годам, рейтинги Кинопоиска и IMDB в списках, полные заголовки эпизодов, раскрытые списки с прямыми ссылками, дополнительные фильтры 
+// @description:uk Покращення для Premier.one: виправлення фільтрації за роками, рейтинги Кінопоіска та IMDB у списках, повні назви епізодів, розгорнуті списки з прямими посиланнями, додаткові фильтри
+// @description:be Удасканаленні для Premier.one: выпраўленне фільтрацыі па гадах, рэйтынгі Кінапоіска і IMDB у спісах, поўныя назвы эпізодаў, раскрытыя спісы з простымі спасылкамі, дадатковыя фільтры
+// @description:bg Подобрения за Premier.one: коригиране на филтрирането по времеви диапазони, рейтинги на Кинопоиск и IMDB в списъците, по-добри заглавия на епизодите, разширени списъци с директни връзки, допълнителни филтри и т.н.
+// @description:tt Premier.one өчен яхшыртулар: еллар буенча фильтрлауны төзәтү, Кинопоиск һәм IMDB рейтинглары исемлектә, эпизодларның яхшыртылган исемнәре, туры сылтамалар белән киңәйтелгән исемлекләр, өстәмә фильтрлар һ.б.
+// @description:sl Izboljšave za Premier.one: popravki filtriranja po časovnih obdobjih, ocene IMDB in Kinopoisk v seznamih, boljši naslovi epizod, razširjeni seznami z neposrednimi povezavami, dodatni filtri itd.
+// @description:sr Poboljšanja za Premier.one: ispravka filtriranja po godinama, rejtinzi Kinopoiska i IMDB u listama, bolji naslovi epizoda, proširene liste sa direktnim linkovima, dodatni filteri itd.
+// @description:ka Premier.one-ის გაუმჯობესებები: დროის დიაპაზონის ფილტრაციის გასწორება, კინოპოისკისა და IMDB-ს რეიტინგები სიებში, უკეთესი ეპიზოდების სათაურები, გაფართოებული სიები პირდაპირი ბმულებით, დამატებითი ფილტრები და სხვა.
 // @namespace      athari
 // @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.1.3
-// @description    Premier.one enhancements: fixed time range filtering, IMDB and Kinopoisk ratings in lists, better episode titles, expanded lists with direct links, extra filters etc.
-// @description:ru Улучшения для Premier.one: исправление фильтрации по годам, рейтинги Кинопоиска и IMDB в списках, полные заголовки эпизодов, раскрытые списки с прямыми ссылками, дополнительные фильтры и т.д.
+// @version        1.1.4
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=premier.one
 // @match          https://premier.one/*
 // @match          https://rutube.ru/*

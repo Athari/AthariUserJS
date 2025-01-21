@@ -1,15 +1,29 @@
 // ==UserScript==
 // @name           Culture.ru – Unlocked [Ath]
 // @name:ru        Culture.ru – Отпёртый [Ath]
+// @name:uk        Culture.ru – Розблоковано [Ath]
+// @name:be        Culture.ru – Адмыкнуты [Ath]
+// @name:bg        Culture.ru – Отключен [Ath]
+// @name:tt        Culture.ru – Açıq [Ath]
+// @name:sl        Culture.ru – Odklenjeno [Ath]
+// @name:sr        Culture.ru – Otključano [Ath]
+// @name:ka        Culture.ru – განბლოკილი [Ath]
+// @description    Fixes the bug causing the "Видеозапись недоступна для просмотра по решению правообладателя" error message.
+// @description:ru Исправляет баг, приводящий к появлению сообщения "Видеозапись недоступна для просмотра по решению правообладателя".
+// @description:uk Виправляє баг, що призводить до появи повідомлення "Відеозапис недоступний для перегляду за рішенням правовласника".
+// @description:be Іспраўляе баг, які прыводзіць да паўстання паведамлення "Відэазапіс недаступны для прагляду па рашэнні праваўладальніка".
+// @description:bg Отстранява грешката, която води до появата на съобщение "Видеозаписът не е достъпен за гледане по решение на правоносителя".
+// @description:tt Хатаны төзәтә, ул "Видеоязманы карау хокук иясе карары буенча мөмкин түгел" дигән хәбәр барлыкка килүгә китерә.
+// @description:sl Odpravlja napako, ki povzroča pojav sporočila "Videoposnetek ni na voljo za ogled na podlagi odločitve imetnika avtorskih pravic".
+// @description:sr Ispravlja bag koji dovodi do pojavljivanja poruke "Video zapis nije dostupan za gledanje na osnovu odluke vlasnika autorskih prava".
+// @description:ka ფიქსირებს ბაგს, რომელიც იწვევს "ვიდეოჩანაწერი უწვდომელია ნახვად ავტორის უფლებამფლობელის გადაწყვეტილების გამო" შეტყობინების გამოჩენას.
 // @namespace      athari
 // @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.2
-// @description    Fixes the bug causing the "Видеозапись недоступна для просмотра по решению правообладателя" error message.
-// @description:ru Исправляет баг, приводящий к появлению сообщения "Видеозапись недоступна для просмотра по решению правообладателя".
+// @version        1.0.3
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=culture.ru
 // @match          https://*.culture.ru/*
 // @grant          unsafeWindow
@@ -21,10 +35,10 @@
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
 // @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.2.2/monkeyutils.u.min.js
-// @require        https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.18/hls.light.min.js
-// @require        https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js
+// @require        https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.light.min.js
+// @require        https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.min.js
 // @resource       script-urlpattern https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
-// @resource       css-plyr          https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.css
+// @resource       css-plyr          https://cdn.jsdelivr.net/npm/plyr@3.7.8/dist/plyr.css
 // @tag            athari
 // ==/UserScript==
 

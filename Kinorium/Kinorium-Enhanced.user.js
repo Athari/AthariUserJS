@@ -2,16 +2,28 @@
 // @name           Kinorium.com – Enhanced [Ath]
 // @name:ru        Kinorium.com – Улучшенный [Ath]
 // @name:uk        Kinorium.com – Покращений [Ath]
+// @name:be        Kinorium.com – Удасканалены [Ath]
+// @name:bg        Kinorium.com – Подобрен [Ath]
+// @name:tt        Kinorium.com – Яхшыртылган [Ath]
+// @name:sl        Kinorium.com – Izboljšan [Ath]
+// @name:sr        Kinorium.com – Poboljšan [Ath]
+// @name:ka        Kinorium.com – გაუმჯობესებული [Ath]
+// @description    Kinorium.com enhancements: user collections usability, links to extra streaming providers, native lazy loading of images etc.
+// @description:ru Улучшения для Kinorium.com: удобство работы с пользовательскими коллекциями, ссылки на дополнительные онлайн-кинотеатры, нативная ленивая загрузка изображений и т.д.
+// @description:uk Покращення для Kinorium.com: зручність роботи з користувацькими колекціями, посилання на додаткові онлайн-кінотеатри, нативна лінива завантаження зображень тощо.
+// @description:be Удасканаленні для Kinorium.com: зручнасць працы з карыстальніцкімі калекцыямі, спасылкі на дадатковыя анлайн-кінатэатры, натыўная ленівая загрузка здымкаў і г.д.
+// @description:bg Подобрения за Kinorium.com: удобство при работата с потребителски колекции, връзки към допълнителни онлайн кинотеатри, нативно мързеливо зареждане на изображения и т.н.
+// @description:tt Kinorium.com өчен яхшыртулар: кулланучы коллекцияләре белән эш итү җиңеллеге, өстәмә онлайн-кинотеатрларга сылтамалар, туган ленивая загрузка изображений һ.б.
+// @description:sl Izboljšave za Kinorium.com: uporabnost uporabniških zbirk, povezave do dodatnih spletnih kinodvoran, domače leno nalaganje slik itd.
+// @description:sr Poboljšanja za Kinorium.com: upotrebljivost korisničkih kolekcija, linkovi ka dodatnim online bioskopima, nativno lenjo učitavanje slika itd.
+// @description:ka Kinorium.com-ის გაუმჯობესება: მომხმარებლის კოლექციების გამოყენების მარტივება, დამატებითი ონლაინ-კინოთეატრების ბმულები, ნატიური ზარმაცი იმიჯების ჩატვირთვა და სხვა.
 // @namespace      athari
 // @author         Athari (https://github.com/Athari)
 // @copyright      © Prokhorov ‘Athari’ Alexander, 2024–2025
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.3
-// @description    Kinorium.com enhancements: user collections usability, links to extra streaming providers, native lazy loading of images etc.
-// @description:ru Улучшения для Kinorium.com: удобство работы с пользовательскими коллекциями, ссылки на дополнительные онлайн-кинотеатры, нативная ленивая загрузка изображений и т.д.
-// @description:uk Покращення для Kinorium.com: зручність роботи з користувацькими колекціями, посилання на додаткові онлайн-кінотеатри, нативне ліниве завантаження зображень тощо.
+// @version        1.0.4
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
