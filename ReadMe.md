@@ -2,6 +2,7 @@
 
 A collection of **user scripts** by [@Athari](/Athari).
 
+* [Animator.ru](#animator)
 * [Culture.ru](#culture)
 * [Kinorium.com](#kinorium)
 * [Premier.one](#premier)
@@ -33,6 +34,15 @@ A collection of **user scripts** by [@Athari](/Athari).
 4. **Click on the ![Install][Install Script Monkey] button** in the top panel to install the script.
 
 5. If at any point you want to **disable or reenable the script**, click on the extension button <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16>, then click on the toggle switch next to the script.
+
+## <a id="animator"/> ![](https://icons.duckduckgo.com/ip3/animator.ru.ico) Animator.ru
+
+### Animator.ru – True Links [![Install Animator.ru True Links Script][Install Script]](Animator/Animator-TrueLinks.user.js?raw=1)
+
+Improves navigation on Animator.ru:
+
+* Displays long lists without pagination.
+* Replaces script links (JavaScript) with real ones (href), so they can be opened in a new tab, copied, etc.
 
 ## <a id="culture"/> ![](https://www.google.com/s2/favicons?sz=32&domain=culture.ru) Culture.ru
 
