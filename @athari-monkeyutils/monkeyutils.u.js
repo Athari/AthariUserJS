@@ -111,20 +111,20 @@
   // URIs
 
   const toUrl = (url) =>
-    url instanceof URL || url instanceof Location ? url : new URL(url);
+    url instanceof URL || url instanceof Location ? url : new URL(url, location?.href);
 
-  const urlParams = (url) => O.fromEntries(new URLSearchParams(toUrl(url).search));
+  const urlSearch = (url) => O.fromEntries(new URLSearchParams(toUrl(url).search));
 
   const matchLocation = (host, patterns = {}, url = null) => {
     const p = new URLPattern({ hostname: `(www\.)?${host}`, ...patterns }).exec(url ?? location.href);
     return p == null ? p : { ...p, ...p.hostname.groups, ...p.pathname.groups, ...p.search.groups, ...p.hash.groups };
   };
 
-  const adjustURLSearch = (url, params) =>
-    new URL('?' + new URLSearchParams({ ...urlParams(url), ...params }), toUrl(url).href).toString();
+  const adjustUrlSearch = (url, params) =>
+    toUrl('?' + new URLSearchParams({ ...urlSearch(url), ...params }), toUrl(url).href).toString();
 
   const adjustLocationSearch = (params) =>
-    adjustURLSearch(location, params);
+    adjustUrlSearch(location, params);
 
   // Errors
 
@@ -164,6 +164,87 @@
       }));
   };
 
+  const overrideFetch = (window, override = { fakeResponse: null, modifyRequestUrl: null, modifyRequestJson: null, modifyResponseJson: null }) => {
+    const tryParseJson = (s, message) => {
+      try {
+        return JSON.parse(options.body);
+      } catch (ex) {
+        console.error(message, ex);
+      }
+    }
+    const { fetch: originalFetch } = window;
+    window.fetch = async (...args) => {
+      let [ resource, options ] = args;
+      const url = toUrl(resource), search = urlSearch(url);
+      const input = { resource, url, search };
+
+      // Fake response
+      if (override.fakeResponse != null) {
+        let fakeResponse = undefined;
+        override.fakeResponse(input, new class {
+          init = { status: 200, statusText: "OK" }
+          #setFakeResponse(body, headers) {
+            fakeResponse = new Response(body, O.assign(this.init, { headers }))
+          }
+          text(body) {
+            this.#setFakeResponse(body, { 'Content-Type': "text/plain" });
+            console.info("fake text", resource, body);
+          }
+          json(body) {
+            this.#setFakeResponse(JSON.stringify(body), { 'Content-Type': "application/json" });
+            console.info("fake json", resource, structuredClone(body));
+          }
+        });
+        if (fakeResponse !== undefined)
+          return fakeResponse;
+      }
+
+      // Modify query url
+      if (override.modifyRequestUrl != null) {
+        const modifiedRequestUrl = override.modifyRequestUrl(input);
+        if (modifiedRequestUrl !== undefined) {
+          console.info("redirect", resource, " -> ", modifiedRequestUrl);
+          resource = modifiedRequestUrl.toString();
+        }
+      }
+
+      // Modify query body
+      if (override.modifyRequestJson != null && options.headers["Content-Type"].includes("application/json")) {
+        const requestJson = tryParseJson(options.body, "invalid request json");
+        if (requestJson !== undefined) {
+          const modifiedRequestJson = override.modifyRequestJson(input, requestJson);
+          if (modifiedRequestJson != null)
+            options.body = JSON.stringify(modifiedRequestJson);
+        }
+      }
+
+      // Perform query
+      const response = await originalFetch(resource, options);
+      const contentType = response.headers.get('Content-Type');
+      if (!contentType || !contentType.includes("application/json"))
+        return response;
+
+      let responseJson = undefined;
+      try {
+        responseJson = await response.clone().json();
+        console.info("original json", resource, structuredClone(responseJson));
+      } catch (ex) {
+        console.error("invalid response json", ex);
+      }
+
+      // Modify response JSON
+      if (override.modifyResponseJson != null) {
+        const modifiedResponseJson = override.modifyResponseJson(input, responseJson);
+        if (modifiedResponseJson !== undefined) {
+          response.json = async () => modifiedResponseJson;
+          console.info("modified json", resource, structuredClone(responseJson));
+        }
+      }
+
+      return response;
+    };
+  };
+
   const reviveConsole = async () => {
     // return waitForValue(() => document.body, body => {
     //   body.insertAdjacentHTML('beforeEnd', /*html*/`<iframe style="display: none">`);
@@ -172,6 +253,18 @@
     (await waitFor(() => document.body)).insertAdjacentHTML('beforeEnd', /*html*/`<iframe style="display: none">`);
     unsafeWindow.console = document.body.lastChild.contentWindow.console;
   }
+
+  // HTML
+
+  const setElementTagName = (elSource, tagName) => {
+    const el = document.createElement(tagName);
+    while (elSource.firstChild != null)
+      el.appendChild(elSource.firstChild);
+    for (let i = 0; i < elSource.attributes.length; i++)
+      el.attributes.setNamedItem(elSource.attributes[i].cloneNode());
+    elSource.replaceWith(el);
+    return el;
+  };
 
   // Fluent
 
@@ -233,15 +326,20 @@
     set: (t, prop, value) => (GM_setValue(prop, value), true),
   });
 
+  const props = (el, map = {}) => new Proxy(map, new class {
+    get(t, prop) { return prop.startsWith('--') ? el.style.getPropertyValue(prop) : el.dataset[prop] }
+  });
+
   // Export
 
   return {
     isObject, assignDeep,
     delay, waitForEvent, waitFor, withTimeout,
     h, u, f,
-    toUrl, urlParams, matchLocation, adjustURLSearch, adjustLocationSearch,
+    toUrl, urlSearch, matchLocation, adjustUrlSearch, adjustLocationSearch,
     throwError, attempt,
-    overrideProperty, reviveConsole,
-    ress, scripts, els, opts,
+    overrideProperty, overrideFetch, reviveConsole,
+    setElementTagName,
+    ress, scripts, els, opts, props,
   };
 });
