@@ -120,11 +120,14 @@
     return p == null ? p : { ...p, ...p.hostname.groups, ...p.pathname.groups, ...p.search.groups, ...p.hash.groups };
   };
 
-  const adjustUrlSearch = (url, params) =>
-    toUrl('?' + new URLSearchParams({ ...urlSearch(url), ...params }), toUrl(url).href).toString();
+  const adjustUrlSearch = (url, search) => {
+    url = toUrl(url);
+    const adjustedSearch = new URLSearchParams({ ...urlSearch(url), ...search });
+    return toUrl(`${url.pathname}?${adjustedSearch}`, url.href).toString();
+  }
 
-  const adjustLocationSearch = (params) =>
-    adjustUrlSearch(location, params);
+  const adjustLocationSearch = (search) =>
+    adjustUrlSearch(location, search);
 
   // Errors
 
@@ -175,7 +178,7 @@
     const { fetch: originalFetch } = window;
     window.fetch = async (...args) => {
       let [ resource, options ] = args;
-      const url = toUrl(resource), search = urlSearch(url);
+      const url = toUrl(resource), search = urlSearch(url), requestUrl = url.toString();
       const input = { resource, url, search };
 
       // Fake response
@@ -188,11 +191,11 @@
           }
           text(body) {
             this.#setFakeResponse(body, { 'Content-Type': "text/plain" });
-            console.info("fake text", resource, body);
+            console.info("fake text", requestUrl, body);
           }
           json(body) {
             this.#setFakeResponse(JSON.stringify(body), { 'Content-Type': "application/json" });
-            console.info("fake json", resource, structuredClone(body));
+            console.info("fake json", requestUrl, structuredClone(body));
           }
         });
         if (fakeResponse !== undefined)
@@ -203,7 +206,7 @@
       if (override.modifyRequestUrl != null) {
         const modifiedRequestUrl = override.modifyRequestUrl(input);
         if (modifiedRequestUrl !== undefined) {
-          console.info("redirect", resource, " -> ", modifiedRequestUrl);
+          console.info("redirect", requestUrl, " -> ", modifiedRequestUrl);
           resource = modifiedRequestUrl.toString();
         }
       }
@@ -227,9 +230,9 @@
       let responseJson = undefined;
       try {
         responseJson = await response.clone().json();
-        console.info("original json", resource, structuredClone(responseJson));
+        console.info("original json", requestUrl, structuredClone(responseJson));
       } catch (ex) {
-        console.error("invalid response json", ex);
+        console.error("invalid response json", requestUrl, ex);
       }
 
       // Modify response JSON
@@ -237,7 +240,7 @@
         const modifiedResponseJson = override.modifyResponseJson(input, responseJson);
         if (modifiedResponseJson !== undefined) {
           response.json = async () => modifiedResponseJson;
-          console.info("modified json", resource, structuredClone(responseJson));
+          console.info("modified json", requestUrl, structuredClone(responseJson));
         }
       }
 
