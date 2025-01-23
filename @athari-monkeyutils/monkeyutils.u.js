@@ -155,8 +155,8 @@
 
   const throwError = (s) => { throw new Error(s) };
 
-  const attempt = (actionOrName, action = null) => {
-    const handleError = ex => console.error(`Failed to ${action != null ? actionOrName : "perform action"} at location:`, location.href, "error:", ex);
+  const attempt = (actionOrName, action = null, log = console.error) => {
+    const handleError = ex => log(`Failed to ${action != null ? actionOrName : "perform action"} at location:`, location.href, "error:", ex);
     try {
       let ret = (action ?? actionOrName)();
       if (ret instanceof Promise)
@@ -181,8 +181,12 @@
     let { value, get, set, log } = isObject(optionsOrSet) ? optionsOrSet : { set: optionsOrSet };
     const logMessage = isString(log) ? log : prop;
     const logAccess = (verb, value, accessor = true) => {
-      if (log != null && accessor)
-        console.info(`${verb} ${logMessage}`, value?.constructor === Object ? structuredClone(value) : value);
+      if (log != null && accessor) {
+        let clone = value;
+        if (value?.constructor === O)
+          attempt("clone value", () => clone = structuredClone(value), console.warn);
+        console.info(`${verb} ${logMessage}`, clone);
+      }
     };
     if (O.hasOwn(o, prop)) {
       if (value === undefined)
@@ -395,7 +399,7 @@
   // Export
 
   return {
-    isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, isFunction, isObject, assignDeep,
+    isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, assignDeep,
     delay, waitForCallback, waitForEvent, waitFor, withTimeout,
     h, u, f,
     toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch,
