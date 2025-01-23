@@ -6,11 +6,20 @@
 })(() => {
   'use strict'
 
-  const O = Object;
+  const O = Object, A = Array;
 
   // Types
 
-  const isObject = (item) => item && typeof item === 'object' && !Array.isArray(item);
+  const isBoolean = (v) => typeof v === 'boolean' || v instanceof Boolean;
+  const isArray = (v) => A.isArray(v);
+  const isNumber = (v) => (typeof v === 'number' || v instanceof Number) && !isNaN(v);
+  const isFiniteNumber = (v) => typeof v === 'number' && !isNaN(v) && isFinite(v);
+  const isFunction = (v) => typeof v === 'function';
+  const isObject = (v) => v !== null && typeof v === 'object' && !A.isArray(v);
+  const isString = (v) => typeof v === 'string' || v instanceof String;
+  const isSymbol = (v) => typeof v === 'symbol';
+  const isUndefined = (v) => v === undefined;
+
   const isPropFluent = (prop, fluent) => O.getPrototypeOf(fluent).hasOwnProperty(prop);
 
   const assignDeep = (target, ...sources) => {
@@ -60,6 +69,11 @@
   const delay = (ms) =>
     new Promise(yay => setTimeout(yay, ms));
 
+  const waitForCallback = () => {
+    let yay, nay, promise = new Promise((y, n) => [ yay, nay ] = [ y, n ]);
+    return [ promise, yay, nay ];
+  };
+
   const waitForEvent = (obj, eventName) =>
     new Promise(yay => obj.addEventListener(eventName, yay, { once: true }));
 
@@ -95,11 +109,15 @@
       return promise.then(then);
   };
 
-  const withTimeout = (promise, ms) => {
+  const withTimeout = async (promise, ms) => {
     let timer = null;
     const timeout = new Promise((_, nay) =>
       timer = setTimeout(() => nay(new Error(`Timed out after ${ms} ms.`)), ms));
-    return Promise.race([ promise, timeout ]).finally(() => clearTimeout(timer));
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
   };
 
   // Strings
@@ -113,12 +131,16 @@
   const toUrl = (url) =>
     url instanceof URL || url instanceof Location ? url : new URL(url, location?.href);
 
-  const urlSearch = (url) => O.fromEntries(new URLSearchParams(toUrl(url).search));
+  const urlSearch = (url) =>
+    O.fromEntries(new URLSearchParams(toUrl(url).search));
 
-  const matchLocation = (host, patterns = {}, url = null) => {
-    const p = new URLPattern({ hostname: `(www\.)?${host}`, ...patterns }).exec(url ?? location.href);
+  const matchUrl = (url, host, patterns = {}) => {
+    const p = new URLPattern({ hostname: `(www\.)?${host}`, ...patterns }).exec(toUrl(url));
     return p == null ? p : { ...p, ...p.hostname.groups, ...p.pathname.groups, ...p.search.groups, ...p.hash.groups };
   };
+
+  const matchLocation = (host, patterns = {}, url = null) =>
+    matchUrl(url ?? location.href, host, patterns);
 
   const adjustUrlSearch = (url, search) => {
     url = toUrl(url);
@@ -150,24 +172,61 @@
   /** @callback GetterCallback @param {} field Field value @returns {} Final value to return from property */
   /** @callback SetterCallback @param {} value New value   @returns {} Final value to assign to property */
   /**
-   * @param {object} opts Options
-   * @param {} opts.value Initial value
-   * @param {GetterCallback} opts.get Getter
-   * @param {SetterCallback} opts.set Setter
+   * @param {object|function} optionsOrSet Options
+   * @param {} optionsOrSet.value Initial value
+   * @param {GetterCallback} optionsOrSet.get Getter
+   * @param {SetterCallback} optionsOrSet.set Setter
   */
-  const overrideProperty = (o, prop, opts = {}) => {
-    let { value, get, set } = opts;
-    if (O.hasOwn(o, prop))
+  const overrideProperty = (o, prop, optionsOrSet = {}) => {
+    let { value, get, set, log } = isObject(optionsOrSet) ? optionsOrSet : { set: optionsOrSet };
+    const logMessage = isString(log) ? log : prop;
+    const logAccess = (verb, value, accessor = true) => {
+      if (log != null && accessor)
+        console.info(`${verb} ${logMessage}`, value?.constructor === Object ? structuredClone(value) : value);
+    };
+    if (O.hasOwn(o, prop)) {
+      if (value === undefined)
+        value = set != null ? set(o[prop]) : o[prop];
       attempt(`delete ${prop} property`, () =>
         delete o[prop]);
+    }
     attempt(`define ${prop} property`, () =>
       O.defineProperty(o, prop, {
-        get: () => get != null ? get(value) : value,
-        set: v => value = set != null ? set(v) : v,
+        get: () => {
+          logAccess("get retrieve", value);
+          const ret = get != null ? get(value) : value;
+          logAccess("get override", ret, get);
+          return ret;
+        },
+        set: (v) => {
+          logAccess("set original", value);
+          value = set != null ? set(v) : v;
+          logAccess("set modified", value, set);
+        },
       }));
   };
 
+  const overrideFunction = (o, prop, fun, out, proc) => {
+    const originalProp = o[prop];
+    let result;
+    try {
+      o[prop] = function(...args) {
+        const ret = fun?.(originalProp, ...args);
+        result = out ? out(ret, ...args) : ret;
+        return ret;
+      };
+      proc?.();
+    } finally {
+      if (proc != null)
+        o[prop] = originalProp;
+    }
+    return result;
+  };
+
   const overrideFetch = (window, override = { fakeResponse: null, modifyRequestUrl: null, modifyRequestJson: null, modifyResponseJson: null }) => {
+    const headerContentType = 'Content-Type';
+    const contentTypeApplicationJson = 'application/json';
+    const contentTypeTextPlain = 'text/plain';
     const tryParseJson = (s, message) => {
       try {
         return JSON.parse(options.body);
@@ -190,11 +249,11 @@
             fakeResponse = new Response(body, O.assign(this.init, { headers }))
           }
           text(body) {
-            this.#setFakeResponse(body, { 'Content-Type': "text/plain" });
+            this.#setFakeResponse(body, { [headerContentType]: contentTypeTextPlain });
             console.info("fake text", requestUrl, body);
           }
           json(body) {
-            this.#setFakeResponse(JSON.stringify(body), { 'Content-Type': "application/json" });
+            this.#setFakeResponse(JSON.stringify(body), { [headerContentType]: contentTypeApplicationJson });
             console.info("fake json", requestUrl, structuredClone(body));
           }
         });
@@ -212,7 +271,7 @@
       }
 
       // Modify query body
-      if (override.modifyRequestJson != null && options.headers["Content-Type"].includes("application/json")) {
+      if (override.modifyRequestJson != null && options.headers[headerContentType].includes(contentTypeApplicationJson)) {
         const requestJson = tryParseJson(options.body, "invalid request json");
         if (requestJson !== undefined) {
           const modifiedRequestJson = override.modifyRequestJson(input, requestJson);
@@ -223,8 +282,8 @@
 
       // Perform query
       const response = await originalFetch(resource, options);
-      const contentType = response.headers.get('Content-Type');
-      if (!contentType || !contentType.includes("application/json"))
+      const contentType = response.headers.get(headerContentType);
+      if (!contentType || !contentType.includes(contentTypeApplicationJson))
         return response;
 
       let responseJson = undefined;
@@ -305,9 +364,9 @@
       get all() { return els(el, map, { ...params, method: 'querySelectorAll' }) }
       get is() { return els(el, map, { ...params, method: 'matches' }) }
       get parent() { return els(el, map, { ...params, method: 'closest' }) }
-      get tag() { return els(el, map, { ...params, syntax: (o, p) => p }) }
-      get id() { return els(el, map, { ...params, syntax: (o, p) => `#${p}` }) }
-      get cls() { return els(el, map, { ...params, syntax: (o, p) => `.${p}` }) }
+      get tag() { return els(el, map, { ...params, syntax: (_, p) => p }) }
+      get id() { return els(el, map, { ...params, syntax: (_, p) => `#${p}` }) }
+      get cls() { return els(el, map, { ...params, syntax: (_, p) => `.${p}` }) }
       get wait() { return els(el, map, { ...params, wait: true }) }
       get wrap() { return els(el, map, { ...params, wrap: map }) }
       wraps(wrap) { return els(el, map, { ...params, wrap }) }
@@ -336,12 +395,12 @@
   // Export
 
   return {
-    isObject, assignDeep,
-    delay, waitForEvent, waitFor, withTimeout,
+    isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, isFunction, isObject, assignDeep,
+    delay, waitForCallback, waitForEvent, waitFor, withTimeout,
     h, u, f,
-    toUrl, urlSearch, matchLocation, adjustUrlSearch, adjustLocationSearch,
+    toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch,
     throwError, attempt,
-    overrideProperty, overrideFetch, reviveConsole,
+    overrideProperty, overrideFunction, overrideFetch, reviveConsole,
     setElementTagName,
     ress, scripts, els, opts, props,
   };
