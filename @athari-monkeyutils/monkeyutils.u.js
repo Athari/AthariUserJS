@@ -77,6 +77,17 @@
   const waitForEvent = (obj, eventName) =>
     new Promise(yay => obj.addEventListener(eventName, yay, { once: true }));
 
+  const waitForDocumentReady = async (state = 'interactive') => {
+    const states = { loading: 0, interactive: 1, complete: 2 };
+    const currentState = states[document.readyState], neededState = states[state];
+    if (currentState >= neededState)
+      return document.readyState;
+    return await new Promise((yay) => document.addEventListener('readystatechange', () => {
+      if (document.readyState == state)
+        yay(document.readyState);
+    }))
+  };
+
   const waitFor = async (predicate, ms = +Infinity) => {
     for (let ret, timeout = now() + ms; now() < timeout; await delay(100))
       if (ret = predicate())
@@ -332,6 +343,16 @@
     return el;
   };
 
+  const wrapElement = (el, tagName, options = { copyAttrs: false }) => {
+    const wrapper = document.createElement(tagName);
+    if (options.copyAttrs)
+      for (let i = 0; i < el.attributes.length; i++)
+        wrapper.attributes.setNamedItem(el.attributes[i].cloneNode());
+    el.parentNode.insertBefore(wrapper, el);
+    wrapper.appendChild(el);
+    return wrapper;
+  };
+
   // Fluent
 
   const gmResources = () => O.fromEntries(O.entries(GM_info.script.resources).map(([, v]) => [v.name, v]));
@@ -400,12 +421,12 @@
 
   return {
     isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, assignDeep,
-    delay, waitForCallback, waitForEvent, waitFor, withTimeout,
+    delay, waitForCallback, waitForEvent, waitForDocumentReady, waitFor, withTimeout,
     h, u, f,
     toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch,
     throwError, attempt,
     overrideProperty, overrideFunction, overrideFetch, reviveConsole,
-    setElementTagName,
+    setElementTagName, wrapElement,
     ress, scripts, els, opts, props,
   };
 });
