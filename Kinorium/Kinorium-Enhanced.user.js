@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.4
+// @version        1.2.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -35,7 +35,7 @@
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
-// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.2.2/monkeyutils.u.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.4.4/monkeyutils.u.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
@@ -48,7 +48,7 @@
 (async () => {
   'use strict'
 
-  const { assignDeep, delay, waitForEvent, h, u, f, matchLocation, attempt, overrideProperty, reviveConsole, ress, scripts, els, opts } =
+  const { assignDeep, delay, waitForDocumentReady, h, u, f, toUrl, matchLocation, attempt, overrideProperty, reviveConsole, wrapElement, ress, scripts, els, opts } =
     athari.monkeyutils;
 
   const hostKinorium = "*\.kinorium\.com";
@@ -56,8 +56,9 @@
   const el = els(document, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .statuses",
-    lazyImages: "img[data-preload]",
+    lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
     lstCinemaButtons: ".film-page__buttons-cinema",
+    lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
     mnuUser: ".userMenu",
   });
   const ctls = ctl => els(ctl, {
@@ -99,7 +100,7 @@
 
   //overrideProperty(unsafeWindow, 'loadedTimestamp', v => (v.setFullYear(3000), v));
 
-  await waitForEvent(document, 'DOMContentLoaded');
+  console.log(await waitForDocumentReady());
   const { USER_ID: userId, PRO: userPro } = unsafeWindow;
   const language = { ua: 'uk' }[unsafeWindow.LANGUAGE] ?? unsafeWindow.LANGUAGE;
   const str = strs[language] ?? strs.en;
@@ -193,6 +194,35 @@
         }
       }
 
+      .trailers__item {
+        display: flex;
+        flex-flow: column;
+        .away-transparency {
+          display: none;
+        }
+      }
+      .trailer.item.video {
+        height: auto !important;
+      }
+      .ath-trailer-title,
+      .ath-trailer-link {
+        display: block;
+        max-width: 260rem;
+        padding: 5rem 0 0 0;
+        font-size: 13rem;
+        text-decoration: inherit;
+        color: #777;
+        .body-dark & {
+          color: #999;
+        }
+        .trailer.item.video & {
+          padding: 3rem 5rem;
+        }
+      }
+      .ath-trailer-title {
+        font-weight: 500;
+      }
+
       .ath-menu-options {
         padding: 0 5rem;
         &:hover {
@@ -257,14 +287,18 @@
     if (!opt.nativeLazyImages)
       return;
     for (let elImage of el.all.lazyImages)
-      assignDeep(elImage, { loading: 'lazy', style: { opacity: 1 }, src: elImage.dataset.preload });
+      assignDeep(elImage, {
+        loading: 'lazy',
+        style: { opacity: 1 },
+        src: elImage.dataset.preload ?? elImage.style.backgroundImage?.replace(/url\("?(.*?)"?\)/, "$1"),
+      });
   });
 
   if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
     attempt("add extra external links", async () => {
       if (!opt.addExtraCinemaSources)
         return;
-      const { microdata, microdataAll } = await script.microdata;
+      const { microdata/*, microdataAll*/ } = await script.microdata;
       const movie = microdata("http://schema.org/Movie", document);
       const titleRu = movie.name;
       const titleOrig = movie.alternativeHeadline?.length > 0 ? movie.alternativeHeadline : titleRu;
@@ -282,6 +316,26 @@
         </li>`).join(""));
     });
   }
+
+  attempt("add direct trailer links", () => {
+    for (let lnkTrailer of el.all.lnkTrailer) {
+      const elLnkTrailer = els(lnkTrailer);
+      const trailer = { ...lnkTrailer.dataset, ...elLnkTrailer.tag.img?.dataset };
+      const trailerUrl = toUrl(trailer.video);
+      const trailerTitle = {
+        "www.youtube.com": "YouTube",
+      }[trailerUrl.hostname] ?? "Video";
+      const trailerUrlHref = trailerUrl.toString()
+        .replace("https://www.youtube.com/embed/", "https://www.youtube.com/watch?v=");
+      // <span title="${h(trailer.width)}×${h(trailer.height)}">${h(trailer.height)}p</span>
+      if (lnkTrailer.classList.contains('item'))
+        wrapElement(lnkTrailer, 'DIV', { copyAttrs: true });
+      lnkTrailer.insertAdjacentHTML('beforeEnd', /*html*/`
+        <span class="ath-trailer-title">${h(lnkTrailer.title)}</span>`);
+      lnkTrailer.insertAdjacentHTML('afterEnd', /*html*/`
+        <a class="ath-trailer-link" href="${h(trailerUrlHref)}">${h(trailerTitle)}</a>`);
+    }
+  })
 
   const iconifyCollections = (force = false) => {
     if (!opt.iconifyUserCollections)
