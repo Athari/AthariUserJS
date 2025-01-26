@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.2.0
+// @version        1.2.1
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -276,7 +276,7 @@
           .map(u => /*html*/`
             <a href="/user/${userId}/collection/movie/${u.ulist_id}/"
               >${u.icon != null ? `${u.icon} ` : ""}${u.title.replace(/[^\p{L}\p{N} -]/ug, '').trim()}</a>`);
-        for (let elTitle of elCache.parent.lstCollection.querySelectorAll(`.movie-title__text[data-id="${itemId}"]`))
+        for (let elTitle of elCache.parent.lstCollection.querySelectorAll(`:is(.movie-title__text, .link-info-movie-type-film)[data-id="${itemId}"]`))
           (elTitle.closest("h3") ?? elTitle.closest("a")).insertAdjacentHTML('afterEnd', /*html*/`
             <div class="ath-movie-ulist">${itemUlist.length > 0 ? itemUlist.join(", ") : "—"}<div>`);
       }
