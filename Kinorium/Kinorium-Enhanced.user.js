@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.2.1
+// @version        1.2.2
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -55,7 +55,7 @@
   const res = ress(), script = scripts(res);
   const el = els(document, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
-    collectionCaches: ".collection_cache", lstCollection: ".collectionList, .statuses",
+    collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses",
     lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
     lstCinemaButtons: ".film-page__buttons-cinema",
     lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
@@ -281,6 +281,7 @@
             <div class="ath-movie-ulist">${itemUlist.length > 0 ? itemUlist.join(", ") : "—"}<div>`);
       }
     }
+    console.info("user collections", userCollections);
   });
 
   attempt("switch to native lazy loading of images", () => {
