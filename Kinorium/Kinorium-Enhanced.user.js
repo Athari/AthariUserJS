@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.2.2
+// @version        1.3.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -58,6 +58,8 @@
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses",
     lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
     lstCinemaButtons: ".film-page__buttons-cinema",
+    item: ".item", itemComment: ".statusText", itemInfo: ".info", statusWidget: ".statusWidget",
+    athItemComment: ".ath-item-status", athItemCommentRating: ".ath-item-status-rating",
     lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
     mnuUser: ".userMenu",
   });
@@ -66,7 +68,8 @@
     checkbox: "input[type=checkbox]",
   });
   const opt = opts({
-    listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true, nativeLazyImages: true,
+    listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true,
+    commentsBelowRatings: true, directLinksToTrailers: true, nativeLazyImages: true,
   });
   const strs = {
     en: {
@@ -74,6 +77,8 @@
       iconifyUserCollections: "Iconify user collections",
       addExtraCinemaSources: "Add extra cinema sources",
       nativeLazyImages: "Native lazy images",
+      commentsBelowRatings: "Comments below ratings",
+      directLinksToTrailers: "Direct links to videos",
       watchMovieOn: "watch “%0%” на %1%",
     },
     ru: {
@@ -81,6 +86,8 @@
       iconifyUserCollections: "Иконки у коллекций юзера",
       addExtraCinemaSources: "Дополнительные кинотеатры",
       nativeLazyImages: "Нативные ленивые картинки",
+      commentsBelowRatings: "Комментарии под оценками",
+      directLinksToTrailers: "Прямые ссылки на видео",
       watchMovieOn: "смотреть «%0%» на %1%",
     },
     uk: {
@@ -88,6 +95,8 @@
       iconifyUserCollections: "Іконки у колекціях користувача",
       addExtraCinemaSources: "Додаткові кінотеатри",
       nativeLazyImages: "Нативні ліниві зображення",
+      commentsBelowRatings: "Коментарі під оцінками",
+      directLinksToTrailers: "Прямі посилання на відео",
       watchMovieOn: "дивитися «%0%» на %1%",
     },
   };
@@ -115,6 +124,13 @@
         font-weight: 400;
         font-display: block;
         src: url(${res.font.neucha.latin.url}) format('woff2');
+      }
+
+      body {
+        --ath-text-color-gray-light: #777;
+        &.body-dark {
+          --ath-text-color-gray-light: #bbb;
+        }
       }
 
       .ath-movie-ulist {
@@ -223,6 +239,30 @@
         font-weight: 500;
       }
 
+      .item .info .ath-item-status {
+        display: grid;
+        grid-template-columns: 32rem 1fr;
+        gap: 20rem;
+        min-height: 32rem;
+        margin: 8rem 0;
+        .ath-item-status-rating {
+          margin: -10rem auto 0;
+          .statusWidget {
+            margin: 0;
+            width: auto;
+            min-width: 32rem;
+          }
+        }
+        .statusText {
+          display: block;
+          align-self: end;
+          margin: 0;
+          font-size: 15rem;
+          line-height: 1.3;
+          color: var(--ath-text-color-gray-light);
+        }
+      }
+
       .ath-menu-options {
         padding: 0 5rem;
         &:hover {
@@ -253,6 +293,8 @@
           ${tplCheckbox('listUserCollections')}
           ${tplCheckbox('iconifyUserCollections')}
           ${tplCheckbox('addExtraCinemaSources')}
+          ${tplCheckbox('commentsBelowRatings')}
+          ${tplCheckbox('directLinksToTrailers')}
           ${tplCheckbox('nativeLazyImages')}
         </div>
       </li>`);
@@ -296,9 +338,9 @@
   });
 
   if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
+    if (!opt.addExtraCinemaSources)
+      return;
     attempt("add extra external links", async () => {
-      if (!opt.addExtraCinemaSources)
-        return;
       const { microdata/*, microdataAll*/ } = await script.microdata;
       const movie = microdata("http://schema.org/Movie", document);
       const titleRu = movie.name;
@@ -318,7 +360,23 @@
     });
   }
 
+  attempt("show comments after user comments", () => {
+    if (!opt.commentsBelowRatings)
+      return;
+    for (const elwComment of el.wrap.all.itemComment) {
+      const elwItem = elwComment.wrap.parent.item;
+      elwItem.itemInfo.insertAdjacentHTML('beforeEnd', /*html*/`
+        <div class="ath-item-status">
+          <div class="ath-item-status-rating"></div>
+        </div>`);
+      elwItem.athItemCommentRating.insertAdjacentElement('beforeEnd', elwItem.all.statusWidget.at(-1));
+      elwItem.athItemComment.insertAdjacentElement('beforeEnd', elwComment.self);
+    }
+  });
+
   attempt("add direct trailer links", () => {
+    if (!opt.directLinksToTrailers)
+      return;
     for (let lnkTrailer of el.all.lnkTrailer) {
       const elLnkTrailer = els(lnkTrailer);
       const trailer = { ...lnkTrailer.dataset, ...elLnkTrailer.tag.img?.dataset };
