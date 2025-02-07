@@ -42,7 +42,7 @@
 
   // Time
 
-  class PromiseWithValue extends Promise {
+  class StatefulPromise extends Promise {
     #success = null
     #value = null
     #error = null
@@ -53,15 +53,15 @@
           value => ([ this.#success, this.#value ] = [ true, value ], yay(value)),
           error => ([ this.#success, this.#error ] = [ false, error ], nay(error)),
         );
-      })
+      });
     }
 
     get success() { return this.#success }
     get value() { return this.#value }
     get error() { return this.#error }
 
-    static resolve(value) { return super.resolve.call(PromiseWithValue, value) }
-    static reject(error) { return super.reject.call(PromiseWithValue, error) }
+    static resolve(value) { return super.resolve.call(StatefulPromise, value) }
+    static reject(error) { return super.reject.call(StatefulPromise, error) }
   }
 
   const now = typeof performance !== 'undefined' ? performance.now.bind(performance) : Date.now;
@@ -95,29 +95,27 @@
     return null;
   };
 
-  const waitForFast = (action) => {
-    let result = action(), none = {};
+  const waitForActionFast = (predicate) => {
+    let result = predicate(), none = {};
     return result instanceof Promise
-      ? PromiseWithValue.race([ result, none ]).then(
-        value => value !== none
-          ? PromiseWithValue.resolve(value)
-          : new PromiseWithValue(result.then.bind(result)),
-        error => PromiseWithValue.reject(error),
+      ? StatefulPromise.race([ result, none ]).then(
+        value => value !== none ? StatefulPromise.resolve(value) : new StatefulPromise(result.then.bind(result)),
+        error => StatefulPromise.reject(error),
       )
-      : PromiseWithValue.resolve(result);
+      : StatefulPromise.resolve(result);
   };
 
-  const waitForValue = (action, then) => {
-    const value = action();
-    if (value)
-      return then(value);
-    const promise = waitForFast(waitFor(action));
-    if (promise.success === true)
-      return then(promise.value);
-    else if (promise.success === false)
+  const waitForFast = (predicate, onYay) => {
+    const result = predicate();
+    if (result)
+      return onYay(result);
+    const wait = waitFor(predicate), instant = {};
+    const promise = StatefulPromise.race([ wait, instant ]).then(
+      value => value !== instant ? StatefulPromise.resolve(value) : new StatefulPromise(wait.then.bind(wait)),
+      error => StatefulPromise.reject(error));
+    if (promise.success === false)
       throw promise.error;
-    else
-      return promise.then(then);
+    return promise.success === true ? onYay(promise.value) : promise.then(onYay);
   };
 
   const withTimeout = async (promise, ms) => {
@@ -164,7 +162,9 @@
 
   // Errors
 
-  const throwError = (s) => { throw new Error(s) };
+  const throwError = (ex) => {
+    throw ex instanceof Error ? ex : new Error(ex);
+  };
 
   const attempt = (actionOrName, action = null, log = console.error) => {
     const handleError = ex => log(`Failed to ${action != null ? actionOrName : "perform action"} at location:`, location.href, "error:", ex);
@@ -322,13 +322,143 @@
     };
   };
 
-  const reviveConsole = async () => {
-    // return waitForValue(() => document.body, body => {
-    //   body.insertAdjacentHTML('beforeEnd', /*html*/`<iframe style="display: none">`);
-    //   unsafeWindow.console = body.lastChild.contentWindow.console;
-    // });
-    (await waitFor(() => document.body)).insertAdjacentHTML('beforeEnd', /*html*/`<iframe style="display: none">`);
-    unsafeWindow.console = document.body.lastChild.contentWindow.console;
+  const overrideXmlHttpRequest = (window, override = { on: {} }) => {
+    window.XMLHttpRequest = class extends window.XMLHttpRequest {
+      //#eventNames = Reflect.ownKeys(XMLHttpRequestEventTarget.prototype).filter(k => k.startsWith?.('on')).map(k => k.substring(2)).concat([ 'readystatechange' ])
+      #eventNames = [ 'abort', 'error', 'load', 'loadend', 'loadstart', 'progress', 'readystatechange', 'timeout' ]
+      #writablePropNames = [ 'responseType', 'timeout', 'withCredentials' ]
+      #readonlyPropNames = [ 'readyState', 'response', 'responseText', 'responseURL', 'responseXML', 'status', 'statusText', 'upload' ]
+      #on = { }
+      #onOverride = { }
+      #options = {
+        async: null,
+        body: null,
+        headers: {},
+        method: null,
+        mime: null,
+        mode: null,
+        password: null,
+        responseType: "",
+        timeout: 0,
+        url: null,
+        username: null,
+        withCredentials: false,
+      }
+      #props = {
+        readyState: undefined,
+        response: undefined,
+        responseHeaders: {},
+        responseText: undefined,
+        reponseURL: undefined,
+        reponseXML: undefined,
+        status: undefined,
+        statusText: undefined,
+        upload: undefined,
+      }
+
+      constructor(params) {
+        super(params);
+        Object.assign(this.#options, params);
+        Object.assign(this.#onOverride, override.on);
+        for (const eventName of this.#eventNames) {
+          Object.defineProperty(this, `on${eventName}`, {
+            get: () => this.#on[eventName]?.[0] ?? null,
+            set: v => this.#on[eventName] = [ v ],
+          });
+        }
+        for (const propName of this.#writablePropNames) {
+          Object.defineProperty(this, propName, {
+            get: () => this.#options[propName],
+            set: v => this.#options[propName] = v,
+          });
+        }
+        for (const propName of this.#readonlyPropNames) {
+          Object.defineProperty(this, propName, {
+            get: () => this.#props[propName] !== undefined ? this.#props[propName] : super[propName],
+            set: v => this.#props[propName] = v,
+          });
+        }
+      }
+
+      #createCustomEvent(eventName) {
+        return Object.defineProperties(new Event(eventName), {
+          target: { value: this, enumerable: true },
+          currentTarget: { value: this, enumerable: true },
+        });
+      }
+
+      #callSuperMethod(methodName, ...args) {
+        const call = () => super[methodName](...args);
+        console.log(`XMLHttpRequest.${methodName}`, args, this);
+        return this.#onOverride[methodName] != null
+          ? this.#onOverride[methodName](this.#createCustomEvent(methodName), call) : call();
+      }
+
+      addEventListener(type, listener, options) {
+        (this.#on[type] ??= []).push(listener);
+        //return super.addEventListener(type, listener, options);
+      }
+
+      removeEventListener(type, listener, options) {
+        if (this.#on[type] == null)
+          return;
+        const index = this.#on[type].indexOf(listener);
+        if (index != -1)
+          this.#on[type].splice(index, 1);
+        //return super.removeEventListener(type, listener, options);
+      }
+
+      overrideMimeType(mime) {
+        Object.assign(this.#options, { mime });
+        return super.overrideMimeType(mime);
+      }
+
+      setRequestHeader(name, value) {
+        name = name.toLowerCase();
+        this.#options.headers[name] = value;
+        return super.setRequestHeader(name, value);
+      }
+
+      getAllResponseHeaders() {
+        return super.getAllResponseHeaders()
+          .trimEnd().split(/[\r\n]+/)
+          .map(h => h.match(/: /)?.slice(1) ?? [ h ])
+          .map(([ hk, hv ]) => hv === undefined ? hk : `${hk}: ${this.#props.responseHeaders[hk.toLowerCase()] ?? hv}\r\n`)
+          .join("");
+      }
+
+      getResponseHeader(name) {
+        name = name.toLowerCase();
+        return this.#props.responseHeaders[name] ?? super.getResponseHeader(name);
+      }
+
+      open(method = 'GET', url = location.href, async = true, username = null, password = null) {
+        Object.assign(this.#options, { method, url, async, username, password });
+        this.#callSuperMethod('open', method, url, async, username, password);
+      }
+
+      send(body) {
+        Object.assign(this.#options, { body });
+        for (const eventName of this.#eventNames) {
+          super.addEventListener(eventName, e => {
+            const on = (e) => this.#on[eventName]?.forEach(h => h(e));
+            const onOverride = this.#onOverride[eventName];
+            if (onOverride != null)
+              return onOverride(e, on)
+            else if (on != null)
+              return on(e);
+          });
+        }
+        this.#callSuperMethod('send', body);
+      }
+    }
+  };
+
+  const reviveConsole = async (window) => {
+    return waitForFast(() => document.body, body => {
+      body.insertAdjacentHTML('beforeEnd', /*html*/`<iframe style="display: none">`);
+      window.console = body.lastChild.contentWindow.console;
+    });
   }
 
   // HTML
@@ -425,7 +555,7 @@
     h, u, f,
     toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch,
     throwError, attempt,
-    overrideProperty, overrideFunction, overrideFetch, reviveConsole,
+    overrideProperty, overrideFunction, overrideFetch, overrideXmlHttpRequest, reviveConsole,
     setElementTagName, wrapElement,
     ress, scripts, els, opts, props,
   };
