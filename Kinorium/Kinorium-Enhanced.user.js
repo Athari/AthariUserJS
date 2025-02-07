@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.5.0
+// @version        1.5.1
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -63,7 +63,7 @@
     athItemComment: ".ath-item-status", athItemCommentRating: ".ath-item-status-rating",
     lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
     mnuUser: ".userMenu",
-    lstSites: ".sites_page .sites",
+    lstSites: ".sites_page .sites", lnkSiteDataHref: ".sites_page .sites a[href='#']:is([data-original-url], [data-url])", btnDelSite: ".sites_page .sites .delReport",
     filmLeftPanel: ".film-page_leftContent",
   }), el = eld(document);
   const ctls = ctl => els(ctl, {
@@ -426,6 +426,10 @@
       if (!opt.addExternalLinks)
         return;
       const sitesEl = eld(await download(`/${murl.movieId}/sites/`, 'html'));
+      for (const elLink of sitesEl.all.lnkSiteDataHref)
+        elLink.href = elLink.dataset.originalUrl ?? elLink.dataset.url;
+      for (const btnDelSite of sitesEl.all.btnDelSite)
+        btnDelSite.remove();
       el.filmLeftPanel.insertAdjacentElement('beforeEnd', sitesEl.lstSites);
     }
   }))();
