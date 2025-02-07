@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.3.0
+// @version        1.4.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -35,7 +35,7 @@
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
-// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.4.4/monkeyutils.u.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.0/monkeyutils.u.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
@@ -48,14 +48,14 @@
 (async () => {
   'use strict'
 
-  const { assignDeep, delay, waitForDocumentReady, h, u, f, toUrl, matchLocation, attempt, overrideProperty, reviveConsole, wrapElement, ress, scripts, els, opts } =
+  const { assignDeep, delay, waitForDocumentReady, h, u, f, toUrl, matchLocation, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
     athari.monkeyutils;
 
   const hostKinorium = "*\.kinorium\.com";
   const res = ress(), script = scripts(res);
   const el = els(document, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
-    collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses",
+    collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses", athMovieUserList: ".ath-movie-ulist",
     lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
     lstCinemaButtons: ".film-page__buttons-cinema",
     item: ".item", itemComment: ".statusText", itemInfo: ".info", statusWidget: ".statusWidget",
@@ -100,8 +100,27 @@
       watchMovieOn: "дивитися «%0%» на %1%",
     },
   };
+  const ops = {};
 
-  await reviveConsole();
+  const { log: consoleLog } = unsafeWindow.console;
+  unsafeWindow.console.log = (...args) => args[0]?.includes?.("Не пиши парсер") ? throwError("fuck you") : consoleLog(...args);
+  const consoleRevived = reviveConsole(unsafeWindow);
+
+  overrideXmlHttpRequest(unsafeWindow, {
+    on: {
+      load: async (_, load) => {
+        load?.();
+        await delay(1);
+        if (!ops.doCommentsBelowRatings)
+          return;
+        ops.doCommentsBelowRatings();
+        ops.doListUserCollections();
+        ops.doNativeLazyImages();
+      },
+    },
+  });
+
+  await consoleRevived;
   S.extendPrototype();
   Object.assign(globalThis, globalThis.URLPattern ? null : await script.urlpattern);
   console.debug("GM info", GM_info);
@@ -277,7 +296,7 @@
       }
     </style>`);
 
-  attempt("add options menu", () => {
+  (ops.addOptionsMenu = () => attempt("add options menu", () => {
     const chks = [];
     const tplCheckbox = (id) => (
       chks.push({ id }), /*html*/`
@@ -300,16 +319,17 @@
       </li>`);
     for (let chk of chks)
       el.id[`ath-${chk.id}`].onchange = (e) => opt[chk.id] = e.target.checked;
-  });
+  }))();
 
   let userCollections = [];
-  attempt("list user collections under movie title", () => {
-    for (let elCache of el.wrap.all.collectionCaches) {
-      const cache = JSON.parse(elCache.self.dataset.cache);
+  (ops.doListUserCollections = () => attempt("list user collections under movie title", () => {
+    for (let elwCache of el.wrap.all.collectionCaches) {
+      const cache = JSON.parse(elwCache.self.dataset.cache);
       console.debug("collection cache", cache);
       let { items: movies, ulist: collections } = cache;
-      userCollections = userCollections.concat(collections);
-      if (!opt.listUserCollections || movies == null || elCache.parent.lstCollection == null)
+      userCollections = /*userCollections.concat(collections)*/collections;
+      const elwLstCollection = elwCache.wrap.parent.lstCollection;
+      if (!opt.listUserCollections || movies == null || elwLstCollection == null || elwLstCollection.athMovieUserList != null)
         return;
       for (let [ itemId, uids ] of Object.entries(movies)) {
         const itemUlist = uids
@@ -318,15 +338,15 @@
           .map(u => /*html*/`
             <a href="/user/${userId}/collection/movie/${u.ulist_id}/"
               >${u.icon != null ? `${u.icon} ` : ""}${u.title.replace(/[^\p{L}\p{N} -]/ug, '').trim()}</a>`);
-        for (let elTitle of elCache.parent.lstCollection.querySelectorAll(`:is(.movie-title__text, .link-info-movie-type-film)[data-id="${itemId}"]`))
+        for (let elTitle of elwLstCollection.self.querySelectorAll(`:is(.movie-title__text, .link-info-movie-type-film)[data-id="${itemId}"]`))
           (elTitle.closest("h3") ?? elTitle.closest("a")).insertAdjacentHTML('afterEnd', /*html*/`
             <div class="ath-movie-ulist">${itemUlist.length > 0 ? itemUlist.join(", ") : "—"}<div>`);
       }
     }
     console.info("user collections", userCollections);
-  });
+  }))();
 
-  attempt("switch to native lazy loading of images", () => {
+  (ops.doNativeLazyImages = () => attempt("switch to native lazy loading of images", () => {
     if (!opt.nativeLazyImages)
       return;
     for (let elImage of el.all.lazyImages)
@@ -335,12 +355,12 @@
         style: { opacity: 1 },
         src: elImage.dataset.preload ?? elImage.style.backgroundImage?.replace(/url\("?(.*?)"?\)/, "$1"),
       });
-  });
+  }))();
 
-  if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
-    if (!opt.addExtraCinemaSources)
-      return;
-    attempt("add extra external links", async () => {
+  (ops.doAddExtraCinemaSources = () => attempt("add extra external links", async () => {
+    if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
+      if (!opt.addExtraCinemaSources)
+        return;
       const { microdata/*, microdataAll*/ } = await script.microdata;
       const movie = microdata("http://schema.org/Movie", document);
       const titleRu = movie.name;
@@ -357,14 +377,16 @@
             <div class="ath-cinema ath-cinema-${c.id}"></div>
           </a>
         </li>`).join(""));
-    });
-  }
+    }
+  }))();
 
-  attempt("show comments after user comments", () => {
+  (ops.doCommentsBelowRatings = () => attempt("show comments after user comments", () => {
     if (!opt.commentsBelowRatings)
       return;
     for (const elwComment of el.wrap.all.itemComment) {
       const elwItem = elwComment.wrap.parent.item;
+      if (elwItem.athItemComment != null)
+        continue;
       elwItem.itemInfo.insertAdjacentHTML('beforeEnd', /*html*/`
         <div class="ath-item-status">
           <div class="ath-item-status-rating"></div>
@@ -372,9 +394,9 @@
       elwItem.athItemCommentRating.insertAdjacentElement('beforeEnd', elwItem.all.statusWidget.at(-1));
       elwItem.athItemComment.insertAdjacentElement('beforeEnd', elwComment.self);
     }
-  });
+  }))();
 
-  attempt("add direct trailer links", () => {
+  (ops.doDirectLinksToTrailers = () => attempt("add direct trailer links", () => {
     if (!opt.directLinksToTrailers)
       return;
     for (let lnkTrailer of el.all.lnkTrailer) {
@@ -394,9 +416,9 @@
       lnkTrailer.insertAdjacentHTML('afterEnd', /*html*/`
         <a class="ath-trailer-link" href="${h(trailerUrlHref)}">${h(trailerTitle)}</a>`);
     }
-  })
+  }))();
 
-  const iconifyCollections = (force = false) => {
+  (ops.iconifyCollections = (force = false) => {
     if (!opt.iconifyUserCollections)
       return;
     const dlgCollections = el.dlgCollections;
@@ -407,7 +429,7 @@
     let i = 0;
     for (let icon of ctl.all.ctlColItemIcon)
       icon.innerText = userCollections[i++].icon;
-  };
+  })();
 
   [ 'click', 'mouseup' ].forEach(e => document.addEventListener(e, async e => {
     console.debug("document event", e.type, e.target, e);
@@ -420,13 +442,13 @@
     }
     await delay(0);
     if (e.type == 'mouseup') {
-      iconifyCollections(true);
+      ops.iconifyCollections(true);
     }
   }));
 
   for (;;) {
     attempt("iconify user collections popup", () => {
-      iconifyCollections();
+      ops.iconifyCollections();
     });
     await delay(200);
   }
