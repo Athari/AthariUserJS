@@ -160,6 +160,63 @@
   const adjustLocationSearch = (search) =>
     adjustUrlSearch(location, search);
 
+  /**
+   * @param {String|URL} url 
+   * @param {'arraybuffer'|'blob'|'bytes'|'form'|'json'|'response'|'stream'|'text'|'html'|'svg'|'xhtml'|'xml'} type 
+   * @param {*} init 
+   * @param {*} options 
+   * @returns {ArrayBuffer|Blob|Int8Array|FormData|Object|Response|ReadableStream|String|HTMLDocument|XMLDocument}
+   */
+  const download = async (url, type = null, init = {}, options = { encoding: null }) => {
+    const response = await fetch(url, Object.assign({ credentials: 'include' }, init));
+    if (!response.ok)
+      throw new Error(`Failed to download ${url} (${response.status} ${response.statusText})`);
+    const getText = async () => options.encoding == null
+      ? await response.text()
+      : new TextDecoder(options.encoding).decode(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type')?.split(";", 1)[0]?.toLowerCase() ?? 'none';
+    type ??= {
+      'application/json': 'json',
+      'application/xhtml+xml': 'xhtml',
+      'application/xml': 'xml',
+      'image/svg+xml': 'svg',
+      'multipart/form-data': 'form',
+      'text/html': 'html',
+      'text/xml': 'xml',
+    }[contentType] ?? Object.entries({
+      'text': /^text\/|^application\/(javascript|ecmascript)$/,
+      'xml': /\+xml$/,
+    }).filter(([ _, re ]) => re.test(contentType)).map(([ type ]) => type)[0];
+    switch (type) {
+      case 'arraybuffer':
+        return await response.arrayBuffer();
+      case 'blob':
+        return await response.blob();
+      case 'bytes':
+        return await response.bytes();
+      case 'form':
+        return await response.formData();
+      case 'json':
+        return await response.json();
+      case 'response':
+        return response;
+      case 'stream':
+        return response.body;
+      case 'text':
+        return await getText();
+      case 'html':
+        return new DOMParser().parseFromString(await getText(), 'text/html');
+      case 'svg':
+        return new DOMParser().parseFromString(await getText(), 'image/svg+xml');
+      case 'xhtml':
+        return new DOMParser().parseFromString(await getText(), 'application/xhtml+xml');
+      case 'xml':
+        return new DOMParser().parseFromString(await getText(), 'text/xml');
+      default:
+        throw new RangeError(`unexpected type '${type}' (content-type '${contentType}')`);
+    }
+  };
+
   // Errors
 
   const throwError = (ex) => {
@@ -553,7 +610,7 @@
     isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, assignDeep,
     delay, waitForCallback, waitForEvent, waitForDocumentReady, waitFor, withTimeout,
     h, u, f,
-    toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch,
+    toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch, download,
     throwError, attempt,
     overrideProperty, overrideFunction, overrideFetch, overrideXmlHttpRequest, reviveConsole,
     setElementTagName, wrapElement,
