@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.4.0
+// @version        1.5.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -35,7 +35,7 @@
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
-// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.0/monkeyutils.u.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.1/monkeyutils.u.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
@@ -48,12 +48,13 @@
 (async () => {
   'use strict'
 
-  const { assignDeep, delay, waitForDocumentReady, h, u, f, toUrl, matchLocation, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
+  const { assignDeep, delay, waitForDocumentReady, h, u, f, toUrl, matchLocation, download, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
+    //require("../@athari-monkeyutils/monkeyutils.u"); // TODO
     athari.monkeyutils;
 
   const hostKinorium = "*\.kinorium\.com";
   const res = ress(), script = scripts(res);
-  const el = els(document, {
+  const eld = doc => els(doc, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses", athMovieUserList: ".ath-movie-ulist",
     lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
@@ -62,14 +63,17 @@
     athItemComment: ".ath-item-status", athItemCommentRating: ".ath-item-status-rating",
     lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
     mnuUser: ".userMenu",
-  });
+    lstSites: ".sites_page .sites",
+    filmLeftPanel: ".film-page_leftContent",
+  }), el = eld(document);
   const ctls = ctl => els(ctl, {
     ctlMovieItem: ".item.movie", ctlColItemSpan: "span:is(.title, .icon, .cnt)", ctlColItemIcon: ".collectionList span.icon",
     checkbox: "input[type=checkbox]",
   });
   const opt = opts({
     listUserCollections: true, iconifyUserCollections: true, addExtraCinemaSources: true,
-    commentsBelowRatings: true, directLinksToTrailers: true, nativeLazyImages: true,
+    commentsBelowRatings: true, directLinksToTrailers: true, addExternalLinks: true,
+    nativeLazyImages: true,
   });
   const strs = {
     en: {
@@ -79,7 +83,8 @@
       nativeLazyImages: "Native lazy images",
       commentsBelowRatings: "Comments below ratings",
       directLinksToTrailers: "Direct links to videos",
-      watchMovieOn: "watch “%0%” на %1%",
+      addExternalLinks: "External movie links in sidebar",
+      watchMovieOn: "watch “%0%” on %1%",
     },
     ru: {
       listUserCollections: "Список коллекций юзера",
@@ -88,6 +93,7 @@
       nativeLazyImages: "Нативные ленивые картинки",
       commentsBelowRatings: "Комментарии под оценками",
       directLinksToTrailers: "Прямые ссылки на видео",
+      addExternalLinks: "Внешние ссылки на фильм сбоку",
       watchMovieOn: "смотреть «%0%» на %1%",
     },
     uk: {
@@ -97,10 +103,11 @@
       nativeLazyImages: "Нативні ліниві зображення",
       commentsBelowRatings: "Коментарі під оцінками",
       directLinksToTrailers: "Прямі посилання на відео",
+      addExternalLinks: "Зовнішні посилання на фільм збоку",
       watchMovieOn: "дивитися «%0%» на %1%",
     },
   };
-  const ops = {};
+  const op = {};
 
   const { log: consoleLog } = unsafeWindow.console;
   unsafeWindow.console.log = (...args) => args[0]?.includes?.("Не пиши парсер") ? throwError("fuck you") : consoleLog(...args);
@@ -110,12 +117,12 @@
     on: {
       load: async (_, load) => {
         load?.();
-        await delay(1);
-        if (!ops.doCommentsBelowRatings)
+        await delay(0);
+        if (!op.isInitialized)
           return;
-        ops.doCommentsBelowRatings();
-        ops.doListUserCollections();
-        ops.doNativeLazyImages();
+        op.doCommentsBelowRatings();
+        op.doListUserCollections();
+        op.doNativeLazyImages();
       },
     },
   });
@@ -146,8 +153,10 @@
       }
 
       body {
+        --ath-header-color-gray: #000c;
         --ath-text-color-gray-light: #777;
         &.body-dark {
+          --ath-header-color-gray: #fffc;
           --ath-text-color-gray-light: #bbb;
         }
       }
@@ -282,6 +291,37 @@
         }
       }
 
+      .film-page_leftContent  {
+        .sites {
+          .sites-page__title-group {
+            margin: 15rem 0 8rem 0;
+            font-size: 18rem;
+            color: var(--ath-header-color-gray);
+          }
+          .sites-pages__item {
+            margin: 6rem 0;
+            a {
+              font-size: 14rem;
+              color: #21b0d0;
+              text-decoration: none;
+              &:hover {
+                color: #ff5032;
+              }
+              .sites_page__flag {
+                margin: 0 7rem 0 0;
+              }
+              img {
+                display: inline;
+                width: 16rem;
+                height: 16rem;
+                margin: 0 5rem 0 0;
+                vertical-align: middle;
+              }
+            }
+          }
+        }
+      }
+
       .ath-menu-options {
         padding: 0 5rem;
         &:hover {
@@ -296,7 +336,7 @@
       }
     </style>`);
 
-  (ops.addOptionsMenu = () => attempt("add options menu", () => {
+  (op.addOptionsMenu = () => attempt("add options menu", () => {
     const chks = [];
     const tplCheckbox = (id) => (
       chks.push({ id }), /*html*/`
@@ -314,6 +354,7 @@
           ${tplCheckbox('addExtraCinemaSources')}
           ${tplCheckbox('commentsBelowRatings')}
           ${tplCheckbox('directLinksToTrailers')}
+          ${tplCheckbox('addExternalLinks')}
           ${tplCheckbox('nativeLazyImages')}
         </div>
       </li>`);
@@ -322,7 +363,7 @@
   }))();
 
   let userCollections = [];
-  (ops.doListUserCollections = () => attempt("list user collections under movie title", () => {
+  (op.doListUserCollections = () => attempt("list user collections under movie title", () => {
     for (let elwCache of el.wrap.all.collectionCaches) {
       const cache = JSON.parse(elwCache.self.dataset.cache);
       console.debug("collection cache", cache);
@@ -346,7 +387,7 @@
     console.info("user collections", userCollections);
   }))();
 
-  (ops.doNativeLazyImages = () => attempt("switch to native lazy loading of images", () => {
+  (op.doNativeLazyImages = () => attempt("switch to native lazy loading of images", () => {
     if (!opt.nativeLazyImages)
       return;
     for (let elImage of el.all.lazyImages)
@@ -357,7 +398,7 @@
       });
   }))();
 
-  (ops.doAddExtraCinemaSources = () => attempt("add extra external links", async () => {
+  (op.doAddExtraCinemaSources = () => attempt("add extra external links", async () => {
     if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
       if (!opt.addExtraCinemaSources)
         return;
@@ -380,7 +421,16 @@
     }
   }))();
 
-  (ops.doCommentsBelowRatings = () => attempt("show comments after user comments", () => {
+  (op.doAddExternalLinks = () => attempt("add external links", async () => {
+    if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
+      if (!opt.addExternalLinks)
+        return;
+      const sitesEl = eld(await download(`/${murl.movieId}/sites/`, 'html'));
+      el.filmLeftPanel.insertAdjacentElement('beforeEnd', sitesEl.lstSites);
+    }
+  }))();
+
+  (op.doCommentsBelowRatings = () => attempt("show comments after user comments", () => {
     if (!opt.commentsBelowRatings)
       return;
     for (const elwComment of el.wrap.all.itemComment) {
@@ -396,7 +446,7 @@
     }
   }))();
 
-  (ops.doDirectLinksToTrailers = () => attempt("add direct trailer links", () => {
+  (op.doDirectLinksToTrailers = () => attempt("add direct trailer links", () => {
     if (!opt.directLinksToTrailers)
       return;
     for (let lnkTrailer of el.all.lnkTrailer) {
@@ -408,7 +458,6 @@
       }[trailerUrl.hostname] ?? "Video";
       const trailerUrlHref = trailerUrl.toString()
         .replace("https://www.youtube.com/embed/", "https://www.youtube.com/watch?v=");
-      // <span title="${h(trailer.width)}×${h(trailer.height)}">${h(trailer.height)}p</span>
       if (lnkTrailer.classList.contains('item'))
         wrapElement(lnkTrailer, 'DIV', { copyAttrs: true });
       lnkTrailer.insertAdjacentHTML('beforeEnd', /*html*/`
@@ -418,7 +467,7 @@
     }
   }))();
 
-  (ops.iconifyCollections = (force = false) => {
+  (op.iconifyCollections = (force = false) => {
     if (!opt.iconifyUserCollections)
       return;
     const dlgCollections = el.dlgCollections;
@@ -442,13 +491,15 @@
     }
     await delay(0);
     if (e.type == 'mouseup') {
-      ops.iconifyCollections(true);
+      op.iconifyCollections(true);
     }
   }));
 
+  op.isInitialized = true;
+
   for (;;) {
     attempt("iconify user collections popup", () => {
-      ops.iconifyCollections();
+      op.iconifyCollections();
     });
     await delay(200);
   }
