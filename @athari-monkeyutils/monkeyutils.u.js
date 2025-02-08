@@ -7,6 +7,23 @@
   'use strict'
 
   const O = Object, A = Array;
+  const mimeType = {
+    appJson: 'application/json',
+    appXHtml: 'application/xhtml+xml',
+    appXml: 'application/xml',
+    imageSvg: 'image/svg+xml',
+    multiFormData: 'multipart/form-data',
+    textHtml: 'text/html',
+    textPlain: 'text/plain',
+    textXml: 'text/xml',
+  };
+  const httpHeader = {
+    contentType: 'content-type',
+  };
+  const dl = {
+    arraybuffer: 'arraybuffer', blob: 'blob', bytes: 'bytes', form: 'form', html: 'html', json: 'json',
+    response: 'response', stream: 'stream', svg: 'svg', text: 'text', xhtml: 'xhtml', xml: 'xml',
+  };
 
   // Types
 
@@ -174,46 +191,47 @@
     const getText = async () => options.encoding == null
       ? await response.text()
       : new TextDecoder(options.encoding).decode(await response.arrayBuffer());
-    const contentType = response.headers.get('content-type')?.split(";", 1)[0]?.toLowerCase() ?? 'none';
+    const getDom = async (mime) => new DOMParser().parseFromString(await getText(), mime);
+    const contentType = response.headers.get(httpHeader.contentType)?.split(";", 1)[0]?.toLowerCase() ?? 'none';
     type ??= {
-      'application/json': 'json',
-      'application/xhtml+xml': 'xhtml',
-      'application/xml': 'xml',
-      'image/svg+xml': 'svg',
-      'multipart/form-data': 'form',
-      'text/html': 'html',
-      'text/xml': 'xml',
+      [mimeType.appJson]: dl.json,
+      [mimeType.appXHtml]: dl.xhtml,
+      [mimeType.appXml]: dl.xml,
+      [mimeType.imageSvg]: dl.svg,
+      [mimeType.multiFormData]: dl.form,
+      [mimeType.textHtml]: dl.html,
+      [mimeType.textXml]: dl.xml,
     }[contentType] ?? Object.entries({
-      'text': /^text\/|^application\/(javascript|ecmascript)$/,
-      'xml': /\+xml$/,
+      [dl.text]: /^text\/.+|^application\/(javascript|ecmascript)$/,
+      [dl.xml]: /\+xml$/,
     }).filter(([ _, re ]) => re.test(contentType)).map(([ type ]) => type)[0];
     switch (type) {
-      case 'arraybuffer':
+      case dl.arraybuffer:
         return await response.arrayBuffer();
-      case 'blob':
+      case dl.blob:
         return await response.blob();
-      case 'bytes':
+      case dl.bytes:
         return await response.bytes();
-      case 'form':
+      case dl.form:
         return await response.formData();
-      case 'json':
+      case dl.json:
         return await response.json();
-      case 'response':
+      case dl.response:
         return response;
-      case 'stream':
+      case dl.stream:
         return response.body;
-      case 'text':
+      case dl.text:
         return await getText();
-      case 'html':
-        return new DOMParser().parseFromString(await getText(), 'text/html');
-      case 'svg':
-        return new DOMParser().parseFromString(await getText(), 'image/svg+xml');
-      case 'xhtml':
-        return new DOMParser().parseFromString(await getText(), 'application/xhtml+xml');
-      case 'xml':
-        return new DOMParser().parseFromString(await getText(), 'text/xml');
+      case dl.html:
+        return await getDom(mimeType.textHtml);
+      case dl.svg:
+        return await getDom(mimeType.imageSvg);
+      case dl.xhtml:
+        return await getDom(mimeType.appXHtml);
+      case dl.xml:
+        return await getDom(mimeType.appXml);
       default:
-        throw new RangeError(`unexpected type '${type}' (content-type '${contentType}')`);
+        throw new RangeError(`unexpected type '${type}' (${httpHeader.contentType} '${contentType}')`);
     }
   };
 
@@ -296,12 +314,9 @@
   };
 
   const overrideFetch = (window, override = { fakeResponse: null, modifyRequestUrl: null, modifyRequestJson: null, modifyResponseJson: null }) => {
-    const headerContentType = 'Content-Type';
-    const contentTypeApplicationJson = 'application/json';
-    const contentTypeTextPlain = 'text/plain';
     const tryParseJson = (s, message) => {
       try {
-        return JSON.parse(options.body);
+        return JSON.parse(s);
       } catch (ex) {
         console.error(message, ex);
       }
@@ -321,11 +336,11 @@
             fakeResponse = new Response(body, O.assign(this.init, { headers }))
           }
           text(body) {
-            this.#setFakeResponse(body, { [headerContentType]: contentTypeTextPlain });
+            this.#setFakeResponse(body, { [httpHeader.contentType]: mimeType.textPlain });
             console.info("fake text", requestUrl, body);
           }
           json(body) {
-            this.#setFakeResponse(JSON.stringify(body), { [headerContentType]: contentTypeApplicationJson });
+            this.#setFakeResponse(JSON.stringify(body), { [httpHeader.contentType]: mimeType.appJson });
             console.info("fake json", requestUrl, structuredClone(body));
           }
         });
@@ -343,7 +358,7 @@
       }
 
       // Modify query body
-      if (override.modifyRequestJson != null && options.headers[headerContentType].includes(contentTypeApplicationJson)) {
+      if (override.modifyRequestJson != null && options.headers[httpHeader.contentType].includes(mimeType.appJson)) {
         const requestJson = tryParseJson(options.body, "invalid request json");
         if (requestJson !== undefined) {
           const modifiedRequestJson = override.modifyRequestJson(input, requestJson);
@@ -354,8 +369,8 @@
 
       // Perform query
       const response = await originalFetch(resource, options);
-      const contentType = response.headers.get(headerContentType);
-      if (!contentType || !contentType.includes(contentTypeApplicationJson))
+      const contentType = response.headers.get(httpHeader.contentType);
+      if (!contentType || !contentType.includes(mimeType.appJson))
         return response;
 
       let responseJson = undefined;
@@ -491,7 +506,7 @@
 
       open(method = 'GET', url = location.href, async = true, username = null, password = null) {
         Object.assign(this.#options, { method, url, async, username, password });
-        this.#callSuperMethod('open', method, url, async, username, password);
+        this.#callSuperMethod(this.open.name, method, url, async, username, password);
       }
 
       send(body) {
@@ -506,7 +521,7 @@
               return on(e);
           });
         }
-        this.#callSuperMethod('send', body);
+        this.#callSuperMethod(this.send.name, body);
       }
     }
   };
