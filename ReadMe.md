@@ -1,6 +1,6 @@
 # User JS
 
-[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) ]
+[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) | [Українська](/ReadMe.uk.md) ]
 
 A collection of **user scripts** by [@Athari](/Athari).
 
@@ -15,14 +15,14 @@ A collection of **user scripts** by [@Athari](/Athari).
 
 ## ⚙️ Instructions
 
-1. **Install a 🐵 userscript extension** (choose one):
+1. **Install a 🐵 user script extension** (choose one):
 
    * <img src="https://www.tampermonkey.net/images/ape.svg" height=16> [Tampermonkey](https://www.tampermonkey.net/) for
      [Chrome](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo) /
      [Edge](https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd) /
      [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/) / 
      [Safari](https://apps.apple.com/app/tampermonkey/id6738342400)  
-     (currently closed source, most featureful)
+     (currently closed source, most feature-rich)
 
    * ![][vm-logo] [Violentmonkey](https://violentmonkey.github.io/) for
      [Chrome](https://chrome.google.com/webstore/detail/violent-monkey/jinjaccalgkegednnccohejagnlnfdag) /
@@ -40,7 +40,7 @@ A collection of **user scripts** by [@Athari](/Athari).
 
 4. **Click on the ![Install][Install Script Monkey] button** in the top panel to install the script.
 
-5. If at any point you want to **disable or reenable the script**, click on the extension button <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16>, then click on the toggle switch next to the script.
+5. If at any point you want to **disable or re-enable the script**, click on the extension button <img src="https://addons.mozilla.org/user-media/addon_icons/0/748-32.png" height=16>, then click on the toggle switch next to the script.
 
 ## <a id="animator"/> ![](https://icons.duckduckgo.com/ip3/animator.ru.ico) Animator.ru
 

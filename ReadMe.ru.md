@@ -1,6 +1,6 @@
 # User JS
 
-[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) ]
+[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) | [Українська](/ReadMe.uk.md) ]
 
 Коллекция **пользовательских скриптов** [@Athari](/Athari).
 
@@ -92,7 +92,7 @@
 
 ## <a id="multiple"/> Для нескольких сайтов
 
-### <a id="reyohoho"/> ![](https://reyohoho.github.io/reyohoho/icons/favicon-32x32.png) ReYohoho – Без рекламы + улучшения [![Установить скрипт ...][Install Script]](Multiple/ReYohoho-NoAds.user.js?raw=1)
+### <a id="reyohoho"/> ![](https://reyohoho.github.io/reyohoho/icons/favicon-32x32.png) ReYohoho – Без Рекламы + Улучшения [![Установить скрипт Без Рекламы + Улучшения][Install Script]](Multiple/ReYohoho-NoAds.user.js?raw=1)
 
 Убирает рекламные ролики с видеобалансеров в онлайн-кинотеатре ReYohoho: Alloha, Collaps, HDVB, Lumex, Rezka, Turbo, Vibix, VideoCDN, VideoSeed и т.д.
 
