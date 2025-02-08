@@ -1,8 +1,6 @@
 # User JS
 
-[
-[English](/ReadMe.md)
-]
+[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) ]
 
 A collection of **user scripts** by [@Athari](/Athari).
 
@@ -13,7 +11,7 @@ A collection of **user scripts** by [@Athari](/Athari).
 * [Multiple](#multiple)
   * [ReYohoho](#reyohoho): No Ads + Enhancements
 
-**See also:** [User CSS](https://github.com/Athari/AthariUserCSS) (@Athari's collection of user styles).
+**See also: [User CSS](https://github.com/Athari/AthariUserCSS)** (@Athari's collection of user styles).
 
 ## ⚙️ Instructions
 
@@ -73,7 +71,7 @@ Various enhancements:
 * Native lazy loading of images
 * etc.
 
-This user script is designed to be used in conjunction with the [user style "Kinorium.com – Enhanced"](https://github.com/Athari/AthariUserCSS#kinorium) [![Install Kinorium.com Enhanced Script][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Kinorium/Kinorium-Enhanced.user.css?raw=1).
+This user script is designed to be used in conjunction with the [user style "Kinorium.com – Enhanced"](https://github.com/Athari/AthariUserCSS#kinorium) [![Install Kinorium.com Enhanced Style][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Kinorium/Kinorium-Enhanced.user.css?raw=1).
 
 ## <a id="premier"/> ![](https://icons.duckduckgo.com/ip3/premier.one.ico) Premier.one
 
@@ -89,13 +87,13 @@ Various enhancements and bug fixes:
 * Full episode titles in the video player.
 * Extra filters (Soyuzmultfilm is the only real content on Premier.one)
 
-This user script is designed to be used in conjunction with the [user style "Premier.one – Enhanced"](https://github.com/Athari/AthariUserCSS#premier) [![Install Premier.one Enhanced Script][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Premier/Premier-Enhanced.user.css?raw=1).
+This user script is designed to be used in conjunction with the [user style "Premier.one – Enhanced"](https://github.com/Athari/AthariUserCSS#premier) [![Install Premier.one Enhanced Style][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Premier/Premier-Enhanced.user.css?raw=1).
 
 ## <a id="multiple"/> Multiple
 
 ### <a id="reyohoho"/> ![](https://reyohoho.github.io/reyohoho/icons/favicon-32x32.png) ReYohoho – No Ads + Enhancements [![Install ReYohoho No Ads Enhancements Script][Install Script]](Multiple/ReYohoho-NoAds.user.js?raw=1)
 
-Removes video ads from online streaming services in ReYohoho: Alloha, Collaps, HDVB, Lumex, Rezka, Turbo, Vibix, VideoCDN, VideoSeed etc.
+Removes video ads from video balancers of the online streaming service ReYohoho: Alloha, Collaps, HDVB, Lumex, Rezka, Turbo, Vibix, VideoCDN, VideoSeed etc.
 
 Also applies minor enhancements, if possible: extra player speeds, design adjustments etc.
 
