@@ -1,6 +1,6 @@
 # User JS
 
-[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) | [Українська](/ReadMe.uk.md) ]
+[ [English](/ReadMe.md) | [**Русский**](/ReadMe.ru.md) | [Українська](/ReadMe.uk.md) | [Беларуская](/ReadMe.be.md) | [Български](/ReadMe.bg.md) | [Татарча](/ReadMe.tt.md) | [Slovenščina](/ReadMe.sl.md) | [Српски](/ReadMe.sr.md) | [ქართული](/ReadMe.ka.md) ]
 
 Коллекция **пользовательских скриптов** [@Athari](/Athari).
 
@@ -85,7 +85,7 @@
 * Рейтинги IMDB и Кинопоиска в списках фильмов (вместо рейтинга Premier).
 * Прямые ссылки на эпизоды и недавно посмотренные фильмы (можно легко открыть в новой вкладке).
 * Полные названия эпизодов в заголовке видео-плеера (вместо "сезон 1").
-* Дополнительные фильтры (кроме Союзмультфильма смотреть на Премьере нечего).
+* Дополнительные фильтры (кроме Союзмультфильма смотреть на Premier нечего).
 * и т.п.
 
 Этот пользовательский скрипт предназначен для совместного использования с [пользовательским стилем "Premier.one – Улучшенный"](https://github.com/Athari/AthariUserCSS#premier) [![Установить стиль Premier.one Улучшенный][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Premier/Premier-Enhanced.user.css?raw=1).
