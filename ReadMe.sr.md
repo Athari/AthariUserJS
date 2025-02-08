@@ -1,6 +1,6 @@
 # User JS
 
-[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) | [Українська](/ReadMe.uk.md) | [Беларуская](/ReadMe.be.md) | [Български](/ReadMe.bg.md) | [Татарча](/ReadMe.tt.md) | [Slovenščina](/ReadMe.sl.md) | [**Српски**](/ReadMe.sr.md) | [ქართული](/ReadMe.ka.md) ]
+[ [English](/ReadMe.md) | [Русский](/ReadMe.ru.md) | [Українська](/ReadMe.uk.md) | [Беларуская](/ReadMe.be.md) | [Български](/ReadMe.bg.md) | [Татарча](/ReadMe.tt.md) | [Slovenščina](/ReadMe.sl.md) | [**Srpski**](/ReadMe.sr.md) | [ქართული](/ReadMe.ka.md) ]
 
 Kolekcija **korisničkih skripti** od [@Athari](/Athari).
 
