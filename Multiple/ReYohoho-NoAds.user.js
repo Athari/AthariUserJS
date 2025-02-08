@@ -8,8 +8,8 @@
 // @name:sl        ReYohoho – Brez Oglasov + Izboljšave [Ath]
 // @name:sr        ReYohoho – Bez Reklama + Poboljšanja [Ath]
 // @name:ka        ReYohoho – რეკლამის გარეშე + გაუმჯობესებები [Ath]
-// @description    Убирает рекламные ролики онлайн-кинотеатров в ReYohoho (Rezka, Alloha, Collaps, VideoCDN и т.д.). Также применяет небольшие улучшения, если возможно (дополнительные скорости проигрывания и т.п.).
-// @description:ru Removes video ads from online streaming services in ReYohoho (Rezka, Alloha, Collaps, VideoCDN etc.). Also applies minor enhancements, if possible (extra play speeds etc.).
+// @description    Removes video ads from online streaming services in ReYohoho (Rezka, Alloha, Collaps, VideoCDN etc.). Also applies minor enhancements, if possible (extra play speeds etc.).
+// @description:ru Убирает рекламные ролики онлайн-кинотеатров в ReYohoho (Rezka, Alloha, Collaps, VideoCDN и т.д.). Также применяет небольшие улучшения, если возможно (дополнительные скорости проигрывания и т.п.).
 // @description:uk Видаляє рекламні ролики з онлайн-сервісів для перегляду відео у ReYohoho (Rezka, Alloha, Collaps, VideoCDN тощо). Також застосовує додаткові покращення, якщо це можливо (додаткові швидкості відтворення тощо).
 // @description:be Выдаляе рэкламныя ролікі з анлайн-стрымінгавых паслуг у ReYohoho (Rezka, Alloha, Collaps, VideoCDN і г.д.). Таксама ўжывае дробныя паляпшэнні, калі гэта магчыма (дадатковыя хуткасці прайгравання і г.д.).
 // @description:bg Премахва видео рекламите от онлайн стрийминг услугите в ReYohoho (Rezka, Alloha, Collaps, VideoCDN и т.н.). Така също прилага малки подобрения, ако е възможно (допълнителни скорости на възпроизвеждане и т.н.).
@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.0
+// @version        1.0.1
 // @icon           https://reyohoho.github.io/reyohoho/icons/favicon-32x32.png
 // @match          https://*.allarknow.online/*
 // @match          https://*.obrut.show/*
