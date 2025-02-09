@@ -4,6 +4,18 @@
 param(
 )
 
+$ErrorActionPreference = 'Stop'
+
+$Notes = @(
+  '[Install Script] and [Install Style] links are buttons which must directly follow the name of the script/style.'
+  'Names of sites/services/companies with exhaustive list of official spellings and/or translations (must not be translated, but can be flexed, if appropriate): '
+    'IMDb, Kinopoisk/Кинопоиск, Premier, Kinorium/Кинориум, Soyuzmultfilm(en/lat)/Союзмультфильм(ru/cyr)/სოიუზმულტფილმი(ka)/Sojuzmultfilm(sr)'
+  'In Russian, always prefer Ё over Е.'
+  'Prefer language-specific quotes (“”, «» etc.) over straight quotes (""); prefer en- and em-dashes (–, —) over dashes (-) in punctuation.'
+  '"Отпёртый" is an intentional word play and should be translated into other languages accordingly.'
+  '"Видеозапись недоступна для просмотра по решению правообладателя" message must be quoted exactly in all languages.'
+)
+
 if (Test-Path ".\!build\Config.user.ps1") { . ".\!build\Config.user.ps1" }
 
 $JsonArgs = @{
@@ -16,17 +28,20 @@ function SchemaString($desc) { @{ type = 'string'; description = $desc } }
 function SchemaStringConst($value) { @{ type = 'string'; const = $value } }
 function SchemaObject($props) { @{ type = 'object'; properties = $props } }
 function SchemaObjectRoot($title, $props) { @{ type = 'object'; title = $title; properties = $props } }
-function SchemaObject-Original() { @{
-  type = 'object'; description = "Original texts"
-  additionalProperties = SchemaString "Original text identified by language code as key"
-}}
+function SchemaDict($desc, $props) { @{ type = 'object'; description = $title; additionalProperties = $props } }
+function SchemaDict-Original() { SchemaDict "Original texts" (
+  SchemaString "Original text identified by language code as key"
+)}
 
 $JsonSchemas = @{
   Translate = @{
     Input = SchemaObjectRoot 'TranslateInput' @{
       operation = SchemaStringConst 'translate'
       locale = SchemaString "Target language code"
-      original = SchemaObject-Original
+      original = SchemaDict-Original
+      notes = SchemaObject "List of translation notes and rules" (
+        SchemaString "Note text"
+      )
     }
     Output = SchemaObjectRoot 'TranslateOutput' @{
       operation = SchemaStringConst 'translate'
@@ -38,7 +53,7 @@ $JsonSchemas = @{
     Input = SchemaObjectRoot 'ReviewInput' @{
       operation = SchemaStringConst 'review'
       locale = SchemaString "Language code of text to review"
-      original = SchemaObject-Original
+      original = SchemaDict-Original
     }
     Output = SchemaObjectRoot 'ReviewOutput' @{
       operation = SchemaStringConst 'review'
@@ -70,8 +85,9 @@ Rules:
 2. Respond strictly with raw pretty-formatted JSON without any decorations. Start response with `{` and end with `}`.
 3. Review and proof-read the requested translation based on the other translations. If only one translation is provided, just proof-read it alone.
 4. Make sure the translation sounds natural to native speakers, but preserve the original writing style.
-5. Explain subtleties of the language assuming the user isn't a native speaker.
-6. Suggest find/replace pairs, where appropriate.
+5. Explain subtleties of the language in English and assume the user isn't a native speaker.
+6. Check whether all rules listed in the notes are strictly followed.
+7. Suggest find/replace pairs, where appropriate.
 "@
 }
 
@@ -95,15 +111,11 @@ function Invoke-OpenAI
     messages = $Messages
   }
   $OpenAIArgs = @{
-    Method = 'Post'
-    Uri = $OpenAI.Uri
-    Authentication = 'Bearer'
-    Token = ConvertTo-SecureString $OpenAI.Key -AsPlainText
+    Method = 'Post'; Uri = $OpenAI.Uri
+    Authentication = 'Bearer'; Token = ConvertTo-SecureString $OpenAI.Key -AsPlainText
     ContentType = 'application/json; charset=utf-8'
-    ConnectionTimeoutSeconds = 120
-    MaximumRedirection = 0
-    ResponseHeadersVariable = 'Headers'
-    StatusCodeVariable = 'HttpCode'
+    ConnectionTimeoutSeconds = 120; MaximumRedirection = 0
+    ResponseHeadersVariable = 'Headers'; StatusCodeVariable = 'HttpCode'
     Body = $InputJson | ConvertTo-Json @JsonArgs
   }
   $Headers = @{}
@@ -168,6 +180,7 @@ function Invoke-OpenAITranslate
   $Output = Invoke-OpenAICommand 'Translate' @{
     locale = $LanguageCodes.$TargetLanguage ?? $TargetLanguage
     original = $OriginalTexts
+    notes = $Notes
   }
   return $Output.translated
 }
@@ -183,6 +196,7 @@ function Invoke-OpenAIReview
   $Output = Invoke-OpenAICommand 'Review' @{
     locale = $ReviewLanguage
     original = $OriginalTexts
+    notes = $Notes
   }
   Write-Host "`nReview:`n"
   $i = 0
@@ -196,53 +210,127 @@ function Invoke-OpenAIReview
 
 #Invoke-OpenAITranslate 'uk' @{ en = "Hello world!"; ru = "Привет, грешный мир!" }
 
+$ReadMeTexts = @{}
 $ReadMes = @{}
+
 function Get-ReadMe($Lang)
 {
-  $ReadMes.$Lang = (Get-Content -Raw ($Lang -eq 'en' ? "./ReadMe.md" : "./ReadMe.$Lang.md")) -replace '(?isx) \[vm\-logo\]: .*', ""
+  $ReadMeText = Get-Content -Raw ($Lang -eq 'en' ? "./ReadMe.md" : "./ReadMe.$Lang.md")
+  return ($ReadMeText -replace '(?insx) \[vm\-logo\]: .*', "").Trim()
+}
+function Load-ReadMe($Lang)
+{
+  $ReadMeTexts.$Lang = Get-ReadMe $Lang
 }
 
 function Translate-ReadMe($Lang)
 {
-  Set-Content -LiteralPath "./ReadMe.$Lang.md" -Value (Invoke-OpenAITranslate $Lang $ReadMes)
+  Set-Content -LiteralPath "./ReadMe.$Lang.md" -Value (Invoke-OpenAITranslate $Lang $ReadMeTexts)
 }
 
 function Review-ReadMe($Lang)
 {
-  Invoke-OpenAIReview $Lang $ReadMes | Out-Null
+  Invoke-OpenAIReview $Lang $ReadMeTexts | Out-Null
 }
 
-Get-ReadMe 'en'
+function Split-ReadMes($FilesMask)
+{
+  function Remove-Anchor($Header) { $Header -replace '<a id[^/>]+/> ', '' }
+
+  function Remove-Badge($Header) { $Header -replace '(?insx) \s \[!\[ [^\]]+ \]\[ [^\]]+ \]\]\( [^\)]+ \)', '' }
+
+  function Split-ReadMeSection($Text, $HeaderPrefix)
+  {
+    $Sections = [regex]::Matches($Text, "(?insx)
+      (?<! \# ) $HeaderPrefix (?<Header> [^\r\n]+ )
+      (?<Text> .+? )
+      (?= \n $HeaderPrefix | \z )")
+    return $Sections.Count -eq 0 ? $Text : ($Sections | foreach {
+      ($Header, $Text) = ($_.Groups['Header'].Value.Trim(), $_.Groups['Text'].Value.Trim())
+      $Items = Split-ReadMeSection $Text "\#$HeaderPrefix"
+      return $Items -is [string] ?
+        [PSCustomObject] @{ Header = $Header; Text = $Items } :
+        [PSCustomObject] @{ Header = $Header; Items = @($Items) }
+    })
+  }
+
+  Get-ChildItem -LiteralPath "." -Filter $FilesMask | foreach {
+    $Lang = $_.Name -replace '(?inx)
+      ReadMe
+      (
+        \. (?<Lang> [\w\-]+ )
+      )?
+      \. md', '${Lang}'
+    $Lang = $Lang -eq "" ? 'en' : $Lang
+    $ReadMes.$Lang = Split-ReadMeSection (Get-ReadMe $Lang) '\#\ '
+  }
+
+  $ReadMes | ConvertTo-Json @JsonArgs | Out-Host
+
+  $ReadMes.GetEnumerator() | foreach {
+    ($Lang, $ReadMe) = ($_.Name, $_.Value)
+    foreach ($SiteDir in Get-ChildItem -Directory | where { -not ($_.Name -match '^[!@\.]') }) {
+      $SiteDirName = $SiteDir.Name
+      foreach ($ScriptFile in Get-ChildItem -File -LiteralPath $SiteDirName -Filter "*.user.js") {
+        $ScriptFileName = $ScriptFile.Name.Replace('.user.js', '')
+        $SiteHeader = $null
+        $ScriptHeader = $null
+        $ScriptText = $null
+        :SectionSearch foreach ($SiteReadMe in $ReadMe.Items) {
+          foreach ($ScriptReadMe in $SiteReadMe.Items) {
+            if ($ScriptReadMe.Header.Contains("$SiteDirName/$ScriptFileName.user.js")) {
+              $SiteHeader = $SiteReadMe.Header
+              $ScriptHeader = $ScriptReadMe.Header
+              $ScriptText = $ScriptReadMe.Text
+              break :SectionSearch
+            }
+          }
+        }
+        $ReadMeText = @(
+          "## $(Remove-Anchor $SiteHeader)"
+          "### $(Remove-Anchor (Remove-Badge $ScriptHeader))"
+          Remove-Badge $ScriptText
+        ) -join "`n`n"
+        Set-Content -LiteralPath "$SiteDirName/$ScriptFileName.$Lang.md" -Value $ReadMeText
+        Write-Host @($SiteDirName, $ScriptFileName, $ScriptName, $SiteHeader, $ScriptHeader)
+      }
+    }
+  }
+}
+
+Load-ReadMe 'en'
 #Review-ReadMe 'en'
 
 #Translate-ReadMe 'ru'
-Get-ReadMe 'ru'
-Review-ReadMe 'ru'
+Load-ReadMe 'ru'
+#Review-ReadMe 'ru'
 
 #Translate-ReadMe 'uk'
-#Get-ReadMe 'uk'
+#Load-ReadMe 'uk'
 #Review-ReadMe 'uk'
 
 #Translate-ReadMe 'be'
-#Get-ReadMe 'be'
+#Load-ReadMe 'be'
 #Review-ReadMe 'be'
 
 #Translate-ReadMe 'bg'
-#Get-ReadMe 'bg'
+#Load-ReadMe 'bg'
 #Review-ReadMe 'bg'
 
 #Translate-ReadMe 'tt'
-#Get-ReadMe 'tt'
+#Load-ReadMe 'tt'
 #Review-ReadMe 'tt'
 
 #Translate-ReadMe 'sl'
-#Get-ReadMe 'sl'
+#Load-ReadMe 'sl'
 #Review-ReadMe 'sl'
 
 #Translate-ReadMe 'sr'
-#Get-ReadMe 'sr'
+#Load-ReadMe 'sr'
 #Review-ReadMe 'sr'
 
 #Translate-ReadMe 'ka'
-#Get-ReadMe 'ka'
+#Load-ReadMe 'ka'
 #Review-ReadMe 'ka'
+
+Split-ReadMes "ReadMe.md"
