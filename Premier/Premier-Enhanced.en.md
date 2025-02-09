@@ -10,6 +10,6 @@ Various enhancements and bug fixes:
 * IMDB and Kinopoisk ratings in movie lists.
 * Direct links to episodes.
 * Full episode titles in the video player.
-* Extra filters (Soyuzmultfilm is the only real content on Premier.one)
+* Extra filters (Soyuzmultfilm is the only real content on Premier)
 
 This user script is designed to be used in conjunction with the [user style "Premier.one – Enhanced"](https://github.com/Athari/AthariUserCSS#premier).
