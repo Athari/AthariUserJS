@@ -55,7 +55,7 @@
 
 ### Culture.ru – Отпёртый [![Установить скрипт Culture.ru Отпёртый][Install Script]](Culture/Culture-Unlocked.user.js?raw=1)
 
-Исправляет баг, приводящий к появлению сообщения "Видеозапись недоступна для просмотра по решению правообладателя".
+Исправляет баг, приводящий к появлению сообщения «Видеозапись недоступна для просмотра по решению правообладателя».
 
 * Всегда отображает видео (кроме внешних).
 * Настраиваемый размер превьюшек в галерее картинок.
@@ -71,7 +71,7 @@
 * Нативная ленивая загрузка изображений
 * и т.п.
 
-Этот пользовательский скрипт предназначен для совместного использования с [пользовательским стилем "Kinorium.com – Улучшенный"](https://github.com/Athari/AthariUserCSS#kinorium) [![Установить стиль Kinorium.com Улучшенный][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Kinorium/Kinorium-Enhanced.user.css?raw=1).
+Этот пользовательский скрипт предназначен для совместного использования с [пользовательским стилем «Kinorium.com – Улучшенный»](https://github.com/Athari/AthariUserCSS#kinorium) [![Установить стиль Kinorium.com Улучшенный][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Kinorium/Kinorium-Enhanced.user.css?raw=1).
 
 ## <a id="premier"/> ![](https://icons.duckduckgo.com/ip3/premier.one.ico) Premier.one
 
@@ -88,7 +88,7 @@
 * Дополнительные фильтры (кроме Союзмультфильма смотреть на Premier нечего).
 * и т.п.
 
-Этот пользовательский скрипт предназначен для совместного использования с [пользовательским стилем "Premier.one – Улучшенный"](https://github.com/Athari/AthariUserCSS#premier) [![Установить стиль Premier.one Улучшенный][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Premier/Premier-Enhanced.user.css?raw=1).
+Этот пользовательский скрипт предназначен для совместного использования с [пользовательским стилем «Premier.one – Улучшенный»](https://github.com/Athari/AthariUserCSS#premier) [![Установить стиль Premier.one Улучшенный][Install Style]](https://github.com/Athari/AthariUserCSS/blob/master/Premier/Premier-Enhanced.user.css?raw=1).
 
 ## <a id="multiple"/> Для нескольких сайтов
 
