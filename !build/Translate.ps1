@@ -333,4 +333,6 @@ Load-ReadMe 'ru'
 #Load-ReadMe 'ka'
 #Review-ReadMe 'ka'
 
-Split-ReadMes "ReadMe.md"
+#Split-ReadMes "ReadMe.md"
+#Split-ReadMes "ReadMe.ru.md"
+Split-ReadMes "ReadMe*.md"
