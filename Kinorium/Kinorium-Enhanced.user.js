@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.5.1
+// @version        1.6.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -35,12 +35,13 @@
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
-// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.1/monkeyutils.u.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.5/monkeyutils.u.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
 // @resource       img-cinema-default https://images.kinorium.com/web/vod/vod_channels.svg
 // @resource       img-cinema-rezka   https://rezka.ag/templates/hdrezka/images/hdrezka-logo.png
+// @resource       img-cinema-mults   https://mults.info/img/logo.png
 // @resource       img-cinema-kinobox data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" viewBox="0 0 16 32"><polygon points="3,11 10,16 3,21" fill="%23eee" stroke="%23eee" stroke-width="4" stroke-linejoin="round" /></svg>
 // @tag            athari
 // ==/UserScript==
@@ -48,7 +49,7 @@
 (async () => {
   'use strict'
 
-  const { assignDeep, delay, waitForDocumentReady, h, u, f, toUrl, matchLocation, download, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
+  const { assignDeep, delay, waitForDocumentReady, h, u, f, utf8ToWin1251, toUrl, matchLocation, download, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
     //require("../@athari-monkeyutils/monkeyutils.u"); // TODO
     athari.monkeyutils;
 
@@ -206,6 +207,10 @@
         &.ath-cinema-rezka {
           background: #282828 url(${res.img.cinema.rezka.data}) no-repeat 2px 3px / 83px 57px;
           filter: brightness(1.8) blur(0.5px);
+        }
+        &.ath-cinema-mults {
+          background: #444 url(${res.img.cinema.mults.data}) no-repeat center 5px / 100px 24px;
+          filter: grayscale(1);
         }
         &.ath-cinema-reyohoho {
           font: 600 22rem / 32px Neucha, Impact, sans-serif;
@@ -405,16 +410,18 @@
       const { microdata/*, microdataAll*/ } = await script.microdata;
       const movie = microdata("http://schema.org/Movie", document);
       const titleRu = movie.name;
+      const titleRu1251 = utf8ToWin1251(titleRu.replace(/ё/gi, "е").toLowerCase(), { encode: true });
       const titleOrig = movie.alternativeHeadline?.length > 0 ? movie.alternativeHeadline : titleRu;
       const cinemas = [
         { id: 'rezka', name: "HDRezka", url: `https://rezka.ag/search/?do=search&subaction=search&q=${u(titleOrig)}` },
         { id: 'reyohoho', name: "ReYohoho", url: `https://reyohoho.github.io/reyohoho/#search=${u(titleOrig)}` },
+        { id: 'mults', name: "Mults", url: `https://mults.info/mults/?wp=1&wd=1&s=${titleRu1251}` },
         { id: 'kinobox', name: "Kinobox", url: `https://kinohost.web.app/search?query=${u(titleOrig)}` },
         { id: 'kinogo', name: "Kinogo", url: `https://kinogo.fun/search/${u(titleRu)}` },
       ];
       el.lstCinemaButtons.insertAdjacentHTML('beforeEnd', cinemas.map(c => /*html*/`
         <li>
-          <a title='${h(f(str.watchMovieOn, movie.name, c.name))}' href="${c.url}" target="_top">
+          <a title='${h(f(str.watchMovieOn, movie.name, c.name))}' href="${h(c.url)}" target="_top">
             <div class="ath-cinema ath-cinema-${c.id}"></div>
           </a>
         </li>`).join(""));
