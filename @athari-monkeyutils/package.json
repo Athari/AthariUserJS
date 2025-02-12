@@ -1,10 +1,10 @@
 {
   "name": "@athari/monkeyutils",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Athari's utils for userscripts.",
   "author": "Athari (https://github.com/Athari)",
   "license": "MIT",
-  "keywords": [ "userscripts", "tampermonkey", "violentmonkey" ],
+  "keywords": [ "userscript", "tampermonkey", "violentmonkey" ],
   "main": "monkeyutils.u.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -152,6 +152,37 @@
   const u = s => h(encodeURIComponent(s));
   const f = (s, ...args) => s.replace(/%(\d+)%/g, (m, i) => args[+i]);
 
+  const numberRange = (start, count) => Array(count).fill().map((_, i) => start + i);
+
+  const win1251ToUtf8Map = [
+    ...numberRange(0, 128),
+    1026, 1027, 8218, 1107, 8222, 8230, 8224, 8225, 8364, 8240, 1033, 8249, 1034, 1036, 1035, 1039,
+    1106, 8216, 8217, 8220, 8221, 8226, 8211, 8212, null, 8482, 1113, 8250, 1114, 1116, 1115, 1119,
+    160, 1038, 1118, 1032, 164, 1168, 166, 167, 1025, 169, 1028, 171, 172, 173, 174, 1031,
+    176, 177, 1030, 1110, 1169, 181, 182, 183, 1105, 8470, 1108, 187, 1112, 1029, 1109, 1111,
+    ...numberRange(1040, 64),
+  ];
+
+  const utf8ToWin1251Map = win1251ToUtf8Map.reduce((o, v, i) => (v !== null && (o[v] = i), o), {});
+
+  const utf8ToEncoding = (str, map, options = {}) => {
+    options = Object.assign({ encode: false, fatal: false }, options);
+    const sb = [];
+    for (let i = 0; i < str.length; i++) {
+      const ord = str.charCodeAt(i);
+      const c = map[ord];
+      if (c !== undefined)
+        sb.push(options.encode
+          ? (c < 128 ? str[i] : `%${c.toString(16)}`)
+          : String.fromCharCode(c));
+      else if (options.fatal)
+        throw new Error(`Unsupported character: ${str.charAt(i)}`);
+    }
+    return sb.join("");
+  }
+
+  const utf8ToWin1251 = (str, options = {}) => utf8ToEncoding(str, utf8ToWin1251Map, options);
+
   // URIs
 
   const toUrl = (url) =>
@@ -624,7 +655,7 @@
   return {
     isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, assignDeep,
     delay, waitForCallback, waitForEvent, waitForDocumentReady, waitFor, withTimeout,
-    h, u, f,
+    h, u, f, utf8ToWin1251,
     toUrl, urlSearch, matchUrl, matchLocation, adjustUrlSearch, adjustLocationSearch, download,
     throwError, attempt,
     overrideProperty, overrideFunction, overrideFetch, overrideXmlHttpRequest, reviveConsole,
