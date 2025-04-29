@@ -25,7 +25,7 @@
     response: 'response', stream: 'stream', svg: 'svg', text: 'text', xhtml: 'xhtml', xml: 'xml',
   };
 
-  // Types
+  // MARK: Types
 
   const isBoolean = (v) => typeof v === 'boolean' || v instanceof Boolean;
   const isArray = (v) => A.isArray(v);
@@ -55,9 +55,9 @@
       }
     }
     return assignDeep(target, ...sources);
-  }
+  };
 
-  // Time
+  // MARK: Time
 
   class StatefulPromise extends Promise {
     #success = null
@@ -146,7 +146,7 @@
     }
   };
 
-  // Strings
+  // MARK: Strings
 
   const h = s => S(s).escapeHTML();
   const u = s => h(encodeURIComponent(s));
@@ -154,13 +154,12 @@
 
   const numberRange = (start, count) => Array(count).fill().map((_, i) => start + i);
 
+  const repeatValue = (value, count) => Array(count).fill(value);
+
   const win1251ToUtf8Map = [
-    ...numberRange(0, 128),
-    1026, 1027, 8218, 1107, 8222, 8230, 8224, 8225, 8364, 8240, 1033, 8249, 1034, 1036, 1035, 1039,
-    1106, 8216, 8217, 8220, 8221, 8226, 8211, 8212, null, 8482, 1113, 8250, 1114, 1116, 1115, 1119,
-    160, 1038, 1118, 1032, 164, 1168, 166, 167, 1025, 169, 1028, 171, 172, 173, 174, 1031,
-    176, 177, 1030, 1110, 1169, 181, 182, 183, 1105, 8470, 1108, 187, 1112, 1029, 1109, 1111,
-    ...numberRange(1040, 64),
+    ...numberRange(0, 128), // ASCII
+    ..."ЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏђ‘’“”•–—˜™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬\xAD®Ї°±Ііґµ¶·ё№є»јЅѕї".split("").map(c => c.charCodeAt(0)),
+    ...numberRange(1040, 64), // Russian alphabet
   ];
 
   const utf8ToWin1251Map = win1251ToUtf8Map.reduce((o, v, i) => (v !== null && (o[v] = i), o), {});
@@ -169,8 +168,7 @@
     options = Object.assign({ encode: false, fatal: false }, options);
     const sb = [];
     for (let i = 0; i < str.length; i++) {
-      const ord = str.charCodeAt(i);
-      const c = map[ord];
+      const c = map[str.charCodeAt(i)];
       if (c !== undefined)
         sb.push(options.encode
           ? (c < 128 ? str[i] : `%${c.toString(16)}`)
@@ -179,11 +177,11 @@
         throw new Error(`Unsupported character: ${str.charAt(i)}`);
     }
     return sb.join("");
-  }
+  };
 
   const utf8ToWin1251 = (str, options = {}) => utf8ToEncoding(str, utf8ToWin1251Map, options);
 
-  // URIs
+  // MARK: URIs
 
   const toUrl = (url) =>
     url instanceof URL || url instanceof Location ? url : new URL(url, location?.href);
@@ -209,14 +207,19 @@
     adjustUrlSearch(location, search);
 
   /**
-   * @param {String|URL} url 
-   * @param {'arraybuffer'|'blob'|'bytes'|'form'|'json'|'response'|'stream'|'text'|'html'|'svg'|'xhtml'|'xml'} type 
-   * @param {*} init 
-   * @param {*} options 
+   * @param {String|URL} url
+   * @param {'arraybuffer'|'blob'|'bytes'|'form'|'json'|'response'|'stream'|'text'|'html'|'svg'|'xhtml'|'xml'} type
+   * @param {RequestInit} init
+   * @param {*} options
    * @returns {ArrayBuffer|Blob|Int8Array|FormData|Object|Response|ReadableStream|String|HTMLDocument|XMLDocument}
    */
-  const download = async (url, type = null, init = {}, options = { encoding: null }) => {
-    const response = await fetch(url, Object.assign({ credentials: 'include' }, init));
+  const download = async (url, type = null, init = {}, options = { encoding: null, fetch: null }) => {
+    const response = await (options.fetch ?? fetch)(url, assignDeep({
+      credentials: 'include',
+      headers: {
+        'accept-encoding': "gzip, deflate, br, zstd",
+      },
+    }, init));
     if (!response.ok)
       throw new Error(`Failed to download ${url} (${response.status} ${response.statusText})`);
     const getText = async () => options.encoding == null
@@ -266,7 +269,7 @@
     }
   };
 
-  // Errors
+  // MARK: Errors
 
   const throwError = (ex) => {
     throw ex instanceof Error ? ex : new Error(ex);
@@ -284,7 +287,7 @@
     }
   };
 
-  // Hacks
+  // MARK: Hacks
 
   /** @callback GetterCallback @param {} field Field value @returns {} Final value to return from property */
   /** @callback SetterCallback @param {} value New value   @returns {} Final value to assign to property */
@@ -564,7 +567,7 @@
     });
   }
 
-  // HTML
+  // MARK: HTML
 
   const setElementTagName = (elSource, tagName) => {
     const el = document.createElement(tagName);
@@ -586,7 +589,7 @@
     return wrapper;
   };
 
-  // Fluent
+  // MARK: Fluent
 
   const gmResources = () => O.fromEntries(O.entries(GM_info.script.resources).map(([, v]) => [v.name, v]));
 
@@ -650,7 +653,7 @@
     get(t, prop) { return prop.startsWith('--') ? el.style.getPropertyValue(prop) : el.dataset[prop] }
   });
 
-  // Export
+  // MARK: Export
 
   return {
     isBoolean, isArray, isNumber, isFiniteNumber, isFunction, isObject, isString, isSymbol, isUndefined, assignDeep,
