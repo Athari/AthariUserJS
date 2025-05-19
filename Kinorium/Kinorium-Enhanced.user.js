@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.6.0
+// @version        1.7.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @grant          unsafeWindow
@@ -35,7 +35,7 @@
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
-// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.5/monkeyutils.u.min.js
+// @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.6/monkeyutils.u.min.js
 // @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
@@ -191,8 +191,14 @@
         opacity: 0.8;
       }
 
-      .film-page__buttons-cinema li {
+      :is(.film-page__buttons-cinema, .ath-film-page__buttons-cinema) li {
         vertical-align: top;
+      }
+      .ath-film-page__buttons-cinema {
+        li {
+          display: inline-block;
+          margin: 10rem 10rem 0 0;
+        }
       }
       .ath-cinema:not(#\0) {
         width: 88px;
@@ -425,6 +431,11 @@
             <div class="ath-cinema ath-cinema-${c.id}"></div>
           </a>
         </li>`).join(""));
+      // fucking uBlock
+      if (el.lstCinemaButtons.computedStyleMap().get('display').value === 'none') {
+        el.lstCinemaButtons.style = "display: flex !important; flex-flow: row wrap !important;";
+        el.lstCinemaButtons.classList.replace('film-page__buttons-cinema', 'ath-film-page__buttons-cinema');
+      }
     }
   }))();
 
