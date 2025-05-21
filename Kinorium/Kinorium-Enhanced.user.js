@@ -23,9 +23,10 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.7.0
+// @version        1.8.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
+// @match          https://*.wco.tv/*
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @grant          GM_setValue
@@ -36,13 +37,18 @@
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
 // @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.6/monkeyutils.u.min.js
-// @resource       script-microdata   https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
-// @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
-// @resource       font-neucha-latin  https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
-// @resource       img-cinema-default https://images.kinorium.com/web/vod/vod_channels.svg
-// @resource       img-cinema-rezka   https://rezka.ag/templates/hdrezka/images/hdrezka-logo.png
-// @resource       img-cinema-mults   https://mults.info/img/logo.png
-// @resource       img-cinema-kinobox data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" viewBox="0 0 16 32"><polygon points="3,11 10,16 3,21" fill="%23eee" stroke="%23eee" stroke-width="4" stroke-linejoin="round" /></svg>
+// @resource       script-microdata       https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
+// @resource       script-urlpattern      https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
+// @resource       font-neucha-latin      https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
+// @resource       img-cinema-default     https://images.kinorium.com/web/vod/vod_channels.svg
+// @resource       img-cinema-rezka       https://rezka.ag/templates/hdrezka/images/hdrezka-logo.png
+// @resource       img-cinema-kisscartoon https://img.cartooncdn.xyz/themes/v3/images/logo.png
+// @resource       img-cinema-wco         https://www.wco.tv/logo.png
+// @resource       img-cinema-mults       https://mults.info/img/logo.png
+// @resource       img-cinema-kinobox     data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" viewBox="0 0 16 32"><polygon points="3,11 10,16 3,21" fill="%23eee" stroke="%23eee" stroke-width="4" stroke-linejoin="round" /></svg>
+// @resource       img-cinema-youtube     https://upload.wikimedia.org/wikipedia/commons/e/e1/Logo_of_YouTube_%282015-2017%29.svg
+// @resource       img-cinema-dailymotion https://upload.wikimedia.org/wikipedia/commons/a/ac/Dailymotion_logo_%282015%29.svg
+// @resource       img-cinema-vkvideo     https://upload.wikimedia.org/wikipedia/commons/8/80/VK_Video.svg
 // @tag            athari
 // ==/UserScript==
 
@@ -54,6 +60,7 @@
     athari.monkeyutils;
 
   const hostKinorium = "*\.kinorium\.com";
+  const hostWco = "*\.wco\.tv";
   const res = ress(), script = scripts(res);
   const eld = doc => els(doc, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
@@ -138,10 +145,29 @@
 
   console.log(await waitForDocumentReady());
   const { USER_ID: userId, PRO: userPro } = unsafeWindow;
-  const language = { ua: 'uk' }[unsafeWindow.LANGUAGE] ?? unsafeWindow.LANGUAGE;
+  const language = { ua: 'uk' }[unsafeWindow.LANGUAGE ?? ''] ?? unsafeWindow.LANGUAGE ?? '';
   const str = strs[language] ?? strs.en;
 
   let murl = null;
+
+  if (matchLocation(hostWco)) {
+    if ((murl = matchLocation(hostWco, { pathname: "/cartoon-list", hash: "#\\?ath\\:*" })) != null) {
+      for (const [k, v] of new URLSearchParams(location.hash.slice(1))) {
+        const [ , cmdOp, ...cmdArgs ] = k.split(":");
+        switch (cmdOp) {
+          case 'el':
+            const ctl = cmdArgs.reduce((a, v) => a[v], el);
+            const [ cmdProp, cmdValue ] = v.split("=");
+            ctl[cmdProp] = decodeURIComponent(cmdValue);
+            if (cmdProp === 'value')
+              setTimeout(() =>
+                [ 'keydown', 'change', 'keyup' ].forEach(e => ctl.dispatchEvent(new Event(e))));
+            break;
+        }
+      }
+    }
+    return;
+  }
 
   el.tag.head.insertAdjacentHTML('beforeEnd', /*html*/`
     <style>
@@ -218,6 +244,27 @@
           background: #444 url(${res.img.cinema.mults.data}) no-repeat center 5px / 100px 24px;
           filter: grayscale(1);
         }
+        &.ath-cinema-kisscartoon {
+          /*background: #444 url(${res.img.cinema.kisscartoon.data}) no-repeat -1px -1px / 93px 35px;
+          filter: grayscale(1);*/
+          &::after {
+            content: "KissCart👀n";
+            display: block;
+            width: fit-content;
+            font: 600 21rem / 32px Times New Roman, emoji;
+            transform: scaleX(0.8);
+            transform-origin: left center;
+            white-space: nowrap;
+            background: linear-gradient(#eee 10px, #999 22px);
+            -webkit-text-stroke: #eee 0.01px;
+            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text;
+          }
+        }
+        &.ath-cinema-wco {
+          background: #444 url(${res.img.cinema.wco.data}) no-repeat 0px -4px / 160px 40px;
+          filter: grayscale(1);
+        }
         &.ath-cinema-reyohoho {
           font: 600 22rem / 32px Neucha, Impact, sans-serif;
           letter-spacing: 1px;
@@ -233,7 +280,7 @@
             width: 16px;
             height: 32px;
             vertical-align: top;
-            background: url('${res.img.cinema.kinobox.url}') no-repeat center center;
+            background: url('${res.img.cinema.kinobox.url}') no-repeat center;
           }
           &::after {
             content: "Kinobox";
@@ -245,6 +292,23 @@
           letter-spacing: 1px;
           &::after {
             content: "KINOGO";
+          }
+        }
+        &.ath-cinema-youtube {
+          background: #bbb url(${res.img.cinema.youtube.data}) no-repeat center / 80px 26px;
+          filter: invert(1) grayscale(1);
+        }
+        &.ath-cinema-dailymotion {
+          background: #bbb url(${res.img.cinema.dailymotion.data}) no-repeat center / 84px 20px;
+          filter: invert(1) grayscale(1);
+        }
+        &.ath-cinema-vkvideo {
+          background: #444 url(${res.img.cinema.vkvideo.data}) no-repeat 2px center / 24px 24px;
+          font: 600 15rem / 34px Arial, sans-serif;
+          filter: grayscale(1);
+          &::after {
+            content: "VK Video";
+            padding-left: 28px;
           }
         }
       }
@@ -415,19 +479,25 @@
         return;
       const { microdata/*, microdataAll*/ } = await script.microdata;
       const movie = microdata("http://schema.org/Movie", document);
+      console.log(movie);
       const titleRu = movie.name;
       const titleRu1251 = utf8ToWin1251(titleRu.replace(/ё/gi, "е").toLowerCase(), { encode: true });
       const titleOrig = movie.alternativeHeadline?.length > 0 ? movie.alternativeHeadline : titleRu;
       const cinemas = [
         { id: 'rezka', name: "HDRezka", url: `https://rezka.ag/search/?do=search&subaction=search&q=${u(titleOrig)}` },
         { id: 'reyohoho', name: "ReYohoho", url: `https://reyohoho.github.io/reyohoho/#search=${u(titleOrig)}` },
+        { id: 'kisscartoon', name: "KissCartoon", url: `https://kisscartoon.sh/Search/?s=${u(titleOrig)}` },
+        { id: 'wco', name: "WatchCartoonOnline", url: `https://www.wco.tv/cartoon-list#?ath:el:id:anime-search=${u(`value=${u(titleOrig)}`)}` },
         { id: 'mults', name: "Mults", url: `https://mults.info/mults/?wp=1&wd=1&s=${titleRu1251}` },
         { id: 'kinobox', name: "Kinobox", url: `https://kinohost.web.app/search?query=${u(titleOrig)}` },
         { id: 'kinogo', name: "Kinogo", url: `https://kinogo.fun/search/${u(titleRu)}` },
+        { id: 'youtube', name: "YouTube", url: `https://youtube.com/results?search_query=${u(titleOrig)}` },
+        { id: 'dailymotion', name: "DailyMotion", url: `https://dailymotion.com/search/${u(titleOrig)}/top-results` },
+        { id: 'vkvideo', name: "VKVideo", url: `https://vkvideo.ru/?q=${u(titleRu)}` },
       ];
       el.lstCinemaButtons.insertAdjacentHTML('beforeEnd', cinemas.map(c => /*html*/`
         <li>
-          <a title='${h(f(str.watchMovieOn, movie.name, c.name))}' href="${h(c.url)}" target="_top">
+          <a title='${h(f(str.watchMovieOn, movie.name, c.name))}' href="${h(c.url.decodeHTMLEntities())}" target="_top">
             <div class="ath-cinema ath-cinema-${c.id}"></div>
           </a>
         </li>`).join(""));
