@@ -23,7 +23,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.8.0
+// @version        1.8.1
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @match          https://*.wco.tv/*
@@ -66,7 +66,7 @@
     dlgCollections: ".collectionWrapper.collectionsWindow",
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses", athMovieUserList: ".ath-movie-ulist",
     lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
-    lstCinemaButtons: ".film-page__buttons-cinema",
+    lstCinemaButtons: ".film-page__buttons-watch_under_description",
     item: ".item", itemComment: ".statusText", itemInfo: ".info", statusWidget: ".statusWidget",
     athItemComment: ".ath-item-status", athItemCommentRating: ".ath-item-status-rating",
     lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
