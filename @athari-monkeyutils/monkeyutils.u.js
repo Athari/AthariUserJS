@@ -200,7 +200,7 @@
   const adjustUrlSearch = (url, search) => {
     url = toUrl(url);
     const adjustedSearch = new URLSearchParams({ ...urlSearch(url), ...search });
-    return toUrl(`${url.pathname}?${adjustedSearch}`, url.href).toString();
+    return toUrl(`${url.origin}${url.pathname}?${adjustedSearch}`, url.href).toString();
   }
 
   const adjustLocationSearch = (search) =>
