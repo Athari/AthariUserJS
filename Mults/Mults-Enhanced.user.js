@@ -19,7 +19,7 @@
 // @run-at         document-start
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
 // @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.8/monkeyutils.u.min.js
-// @require        https://cdn.plyr.io/3.8.4/plyr.js
+// @require        https://cdn.jsdelivr.net/npm/plyr@3.8.4/dist/plyr.min.js
 // @resource       script-urlpattern  https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
 // @resource       style-plyr         https://cdn.plyr.io/3.8.4/plyr.css
 // @resource       image-plyr         https://cdn.plyr.io/3.8.4/plyr.svg
