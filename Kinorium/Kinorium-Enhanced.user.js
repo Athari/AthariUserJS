@@ -23,10 +23,13 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.8.1
+// @version        1.9.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=kinorium.com
 // @match          https://*.kinorium.com/*
 // @match          https://*.wco.tv/*
+// @match          https://*.kinobox.in/*
+// @match          https://*.kinohub.vip/*
+// @match          https://kinohost.web.app/*
 // @grant          unsafeWindow
 // @grant          GM_getValue
 // @grant          GM_setValue
@@ -35,17 +38,18 @@
 // @grant          GM_info
 // @grant          GM_registerMenuCommand
 // @run-at         document-start
+// @require        https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js
 // @require        https://cdn.jsdelivr.net/npm/string@3.3.3/dist/string.min.js
 // @require        https://cdn.jsdelivr.net/npm/@athari/monkeyutils@0.5.6/monkeyutils.u.min.js
 // @resource       script-microdata       https://cdn.jsdelivr.net/npm/@cucumber/microdata@2.1.0/dist/esm/src/index.min.js
 // @resource       script-urlpattern      https://cdn.jsdelivr.net/npm/urlpattern-polyfill/dist/urlpattern.js
-// @resource       font-neucha-latin      https://fonts.gstatic.com/s/neucha/v17/q5uGsou0JOdh94bfvQlt.woff2
 // @resource       img-cinema-default     https://images.kinorium.com/web/vod/vod_channels.svg
 // @resource       img-cinema-rezka       https://rezka.ag/templates/hdrezka/images/hdrezka-logo.png
 // @resource       img-cinema-kisscartoon https://img.cartooncdn.xyz/themes/v3/images/logo.png
 // @resource       img-cinema-wco         https://www.wco.tv/logo.png
 // @resource       img-cinema-mults       https://mults.info/img/logo.png
 // @resource       img-cinema-kinobox     data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" viewBox="0 0 16 32"><polygon points="3,11 10,16 3,21" fill="%23eee" stroke="%23eee" stroke-width="4" stroke-linejoin="round" /></svg>
+// @resource       img-cinema-zetflix     https://zet-flix.online/favicon.ico
 // @resource       img-cinema-youtube     https://upload.wikimedia.org/wikipedia/commons/e/e1/Logo_of_YouTube_%282015-2017%29.svg
 // @resource       img-cinema-dailymotion https://upload.wikimedia.org/wikipedia/commons/a/ac/Dailymotion_logo_%282015%29.svg
 // @resource       img-cinema-vkvideo     https://upload.wikimedia.org/wikipedia/commons/8/80/VK_Video.svg
@@ -55,24 +59,33 @@
 (async () => {
   'use strict'
 
-  const { assignDeep, delay, waitForDocumentReady, h, u, f, utf8ToWin1251, toUrl, matchLocation, download, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
+  const { assignDeep, delay, waitForDocumentReady, h, u, f, utf8ToWin1251, toUrl, urlSearch, matchLocation, matchUrl, download, attempt, throwError, overrideProperty, overrideXmlHttpRequest, reviveConsole, wrapElement, ress, scripts, els, opts } =
     //require("../@athari-monkeyutils/monkeyutils.u"); // TODO
     athari.monkeyutils;
 
-  const hostKinorium = "*\.kinorium\.com";
-  const hostWco = "*\.wco\.tv";
+  const host = {
+    kinorium: "*\.kinorium\.com",
+    wco: "*\.wco\.tv",
+    kinobox: "(www\.)?(.*\.)?(kinobox|kinohub|kinohost)\.(\w+|web\.app)",
+  };
   const res = ress(), script = scripts(res);
   const eld = doc => els(doc, {
     dlgCollections: ".collectionWrapper.collectionsWindow",
     collectionCaches: ".collection_cache", lstCollection: ".collectionList, .filmList, .statuses", athMovieUserList: ".ath-movie-ulist",
     lazyImages: "img[data-preload], img[src*='/img/blank'][style^='background:']",
-    lstCinemaButtons: ".film-page__buttons-watch_under_description",
+    lstCinemaButtons: ".film-page__buttons-watch_under_description, .buttovod",
+    lnkCinemaZetflix: "a:has(> .ath-cinema-zetflix)",
     item: ".item", itemComment: ".statusText", itemInfo: ".info", statusWidget: ".statusWidget",
     athItemComment: ".ath-item-status", athItemCommentRating: ".ath-item-status-rating",
     lnkTrailer: ".trailers__list .trailers__link, .trailer.item.video",
     mnuUser: ".userMenu",
     lstSites: ".sites_page .sites", lnkSiteDataHref: ".sites_page .sites a[href='#']:is([data-original-url], [data-url])", btnDelSite: ".sites_page .sites .delReport",
     filmLeftPanel: ".film-page_leftContent",
+    kinobox: {
+      lblMovieTitleRussian: ".movie_title_russian",
+      lstMovieRatings: ".movie_rating_list",
+      lnkMovieRatingKinopoisk: ".movie_rating_list a[href^='https://www.kinopoisk.ru/film/']"
+    },
   }), el = eld(document);
   const ctls = ctl => els(ctl, {
     ctlMovieItem: ".item.movie", ctlColItemSpan: "span:is(.title, .icon, .cnt)", ctlColItemIcon: ".collectionList span.icon",
@@ -85,6 +98,7 @@
   });
   const strs = {
     en: {
+      kinorium: "Kinorium",
       listUserCollections: "List user collections",
       iconifyUserCollections: "Iconify user collections",
       addExtraCinemaSources: "Add extra cinema sources",
@@ -95,6 +109,7 @@
       watchMovieOn: "watch “%0%” on %1%",
     },
     ru: {
+      kinorium: "Кинориум",
       listUserCollections: "Список коллекций юзера",
       iconifyUserCollections: "Иконки у коллекций юзера",
       addExtraCinemaSources: "Дополнительные кинотеатры",
@@ -105,6 +120,7 @@
       watchMovieOn: "смотреть «%0%» на %1%",
     },
     uk: {
+      kinorium: "Кинориум",
       listUserCollections: "Список колекцій користувача",
       iconifyUserCollections: "Іконки у колекціях користувача",
       addExtraCinemaSources: "Додаткові кінотеатри",
@@ -148,10 +164,18 @@
   const language = { ua: 'uk' }[unsafeWindow.LANGUAGE ?? ''] ?? unsafeWindow.LANGUAGE ?? '';
   const str = strs[language] ?? strs.en;
 
+  async function kinoriumApi(path, args) {
+    const x = s => [...s].map((c, i) => String.fromCharCode((100 - i) ^ c.charCodeAt(0))).join("");
+    const key = x('VN\x06\x02Vjm8jjln932ggf70gz/t}|s{}"% us'), salt = x('-6U\x038%'), base = x('\x00\x01');
+    const param = Object.entries(args).map(([k, v]) => `${u(k)}=${u(v)}`).join("&");
+    const hash = SparkMD5.hash(`${path}?${param}` + salt).substr(0, 5);
+    return await download(`https://${base}.kinorium.com${path}?${param}&apikey=${key}-${hash}`, 'json', { credentials: 'omit' });
+  }
+
   let murl = null;
 
-  if (matchLocation(hostWco)) {
-    if ((murl = matchLocation(hostWco, { pathname: "/cartoon-list", hash: "#\\?ath\\:*" })) != null) {
+  if (matchLocation(host.wco)) {
+    if ((murl = matchLocation(host.wco, { pathname: "/cartoon-list", hash: "#\\?ath\\:*" })) != null) {
       for (const [k, v] of new URLSearchParams(location.hash.slice(1))) {
         const [ , cmdOp, ...cmdArgs ] = k.split(":");
         switch (cmdOp) {
@@ -167,18 +191,38 @@
       }
     }
     return;
+  } else if (matchLocation(host.kinobox)) {
+    el.tag.head.insertAdjacentHTML('beforeEnd', /*html*/`
+      <style>
+        .movie_rating_body {
+          gap: 0.7ch;
+        }
+      </style>`);
+    if ((murl = matchLocation(host.kinobox, { pathname: "/movie/:movieId" })) != null) {
+      const exchange = await kinoriumApi("/exchange/", {
+        lng: language,
+        url: (await el.wait.kinobox.lnkMovieRatingKinopoisk).href,
+        title: el.kinobox.lblMovieTitleRussian?.innerText ?? "",
+      });
+      const rating = await kinoriumApi("/rating/", { movie_id: exchange.id });
+      console.log("kinorium info", { exchange, rating });
+      const da = `data-${Object.keys(el.kinobox.lstMovieRatings.dataset)[0]}`;
+      el.kinobox.lstMovieRatings.insertAdjacentHTML('afterBegin', /*html*/`
+        <li ${da} class="movie_rating_row">
+          <div ${da} class="movie_rating_name">
+            <a ${da} href="${h(exchange.url)}" target="_blank">${h(str.kinorium)}</a>
+          </div>
+          <div ${da} class="movie_rating_body">
+            <span ${da} class="movie_rating_value">${h(rating.rating.kr.rating)}</span>
+            <span ${da} class="movie_rating_count">${h(rating.rating.kr.cnt)}</span>
+          </div>
+        </li>`);
+    }
+    return;
   }
 
   el.tag.head.insertAdjacentHTML('beforeEnd', /*html*/`
     <style>
-      @font-face {
-        font-family: 'Neucha';
-        font-style: normal;
-        font-weight: 400;
-        font-display: block;
-        src: url(${res.font.neucha.latin.url}) format('woff2');
-      }
-
       body {
         --ath-header-color-gray: #000c;
         --ath-text-color-gray-light: #777;
@@ -230,7 +274,7 @@
         width: 88px;
         height: 32px;
         text-align: center;
-        color: #eee;
+        color: #fff;
         background-color: #444;
         border-radius: 2rem;
         a:has(> &) {
@@ -265,13 +309,6 @@
           background: #444 url(${res.img.cinema.wco.data}) no-repeat 0px -4px / 160px 40px;
           filter: grayscale(1);
         }
-        &.ath-cinema-reyohoho {
-          font: 600 22rem / 32px Neucha, Impact, sans-serif;
-          letter-spacing: 1px;
-          &::after {
-            content: "ReYohoho";
-          }
-        }
         &.ath-cinema-kinobox {
           font: 600 18rem / 32px Arial, sans-serif;
           &::before {
@@ -292,6 +329,17 @@
           letter-spacing: 1px;
           &::after {
             content: "KINOGO";
+          }
+        }
+        &.ath-cinema-zetflix {
+          font: 600 22rem / 36px Arial, sans-serif;
+          letter-spacing: 1px;
+          color: #111;
+          background: #ccc url('${res.img.cinema.zetflix.data}') no-repeat 6px center / 24px 24px;
+          filter: invert(1) grayscale(1) brightness(1.4);
+          &::after {
+            content: "etflix";
+            padding: 0 0 0 28px;
           }
         }
         &.ath-cinema-youtube {
@@ -331,6 +379,10 @@
         font-size: 13rem;
         text-decoration: inherit;
         color: #777;
+        a {
+          display: inline !important;
+          color: inherit;
+        }
         .body-dark & {
           color: #999;
         }
@@ -474,7 +526,7 @@
   }))();
 
   (op.doAddExtraCinemaSources = () => attempt("add extra external links", async () => {
-    if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
+    if ((murl = matchLocation(host.kinorium, { pathname: "/:movieId/" })) != null) {
       if (!opt.addExtraCinemaSources)
         return;
       const { microdata/*, microdataAll*/ } = await script.microdata;
@@ -483,14 +535,15 @@
       const titleRu = movie.name;
       const titleRu1251 = utf8ToWin1251(titleRu.replace(/ё/gi, "е").toLowerCase(), { encode: true });
       const titleOrig = movie.alternativeHeadline?.length > 0 ? movie.alternativeHeadline : titleRu;
+      const zetflixDate = new Intl.DateTimeFormat('en-uk', { day: 'numeric', month: 'short' }).format(new Date()).replace(" ", "").toLowerCase();
       const cinemas = [
         { id: 'rezka', name: "HDRezka", url: `https://rezka.ag/search/?do=search&subaction=search&q=${u(titleOrig)}` },
-        { id: 'reyohoho', name: "ReYohoho", url: `https://reyohoho.github.io/reyohoho/#search=${u(titleOrig)}` },
+        { id: 'kinobox', name: "Kinobox", url: `https://kinohost.web.app/search?query=${u(titleOrig)}` },
+        { id: 'kinogo', name: "Kinogo", url: `https://kinogo.fun/search/${u(titleRu)}` },
+        { id: 'zetflix', name: "Zetflix", url: `https://${zetflixDate}.zet-flix.online/index.php?do=search&subaction=search&story=${u(titleOrig)}` },
         { id: 'kisscartoon', name: "KissCartoon", url: `https://kisscartoon.sh/Search/?s=${u(titleOrig)}` },
         { id: 'wco', name: "WatchCartoonOnline", url: `https://www.wco.tv/cartoon-list#?ath:el:id:anime-search=${u(`value=${u(titleOrig)}`)}` },
         { id: 'mults', name: "Mults", url: `https://mults.info/mults/?wp=1&wd=1&s=${titleRu1251}` },
-        { id: 'kinobox', name: "Kinobox", url: `https://kinohost.web.app/search?query=${u(titleOrig)}` },
-        { id: 'kinogo', name: "Kinogo", url: `https://kinogo.fun/search/${u(titleRu)}` },
         { id: 'youtube', name: "YouTube", url: `https://youtube.com/results?search_query=${u(titleOrig)}` },
         { id: 'dailymotion', name: "DailyMotion", url: `https://dailymotion.com/search/${u(titleOrig)}/top-results` },
         { id: 'vkvideo', name: "VKVideo", url: `https://vkvideo.ru/?q=${u(titleRu)}` },
@@ -501,7 +554,7 @@
             <div class="ath-cinema ath-cinema-${c.id}"></div>
           </a>
         </li>`).join(""));
-      // fucking uBlock
+      // fucking ru adblock dumb fuck maintainer
       if (el.lstCinemaButtons.computedStyleMap().get('display').value === 'none') {
         el.lstCinemaButtons.style = "display: flex !important; flex-flow: row wrap !important;";
         el.lstCinemaButtons.classList.replace('film-page__buttons-cinema', 'ath-film-page__buttons-cinema');
@@ -510,7 +563,7 @@
   }))();
 
   (op.doAddExternalLinks = () => attempt("add external links", async () => {
-    if ((murl = matchLocation(hostKinorium, { pathname: "/:movieId/" })) != null) {
+    if ((murl = matchLocation(host.kinorium, { pathname: "/:movieId/" })) != null) {
       if (!opt.addExternalLinks)
         return;
       const sitesEl = eld(await download(`/${murl.movieId}/sites/`, 'html'));
@@ -545,17 +598,25 @@
       const elLnkTrailer = els(lnkTrailer);
       const trailer = { ...lnkTrailer.dataset, ...elLnkTrailer.tag.img?.dataset };
       const trailerUrl = toUrl(trailer.video);
+      const trailerSearch = urlSearch(trailerUrl);
       const trailerTitle = {
         "www.youtube.com": "YouTube",
+        "vk.com": "VK Video",
+        "vkvideo.ru": "VK Video",
       }[trailerUrl.hostname] ?? "Video";
-      const trailerUrlHref = trailerUrl.toString()
+      let trailerUrlHref = trailerUrl.toString()
         .replace("https://www.youtube.com/embed/", "https://www.youtube.com/watch?v=");
+      if (trailerUrl.hostname == "vk.com" || trailerUrl.hostname == "vkvideo.ru")
+        trailerUrlHref = `https://vk.com/video${trailerSearch.oid}_${trailerSearch.id}`;
       if (lnkTrailer.classList.contains('item'))
         wrapElement(lnkTrailer, 'DIV', { copyAttrs: true });
       lnkTrailer.insertAdjacentHTML('beforeEnd', /*html*/`
         <span class="ath-trailer-title">${h(lnkTrailer.title)}</span>`);
       lnkTrailer.insertAdjacentHTML('afterEnd', /*html*/`
-        <a class="ath-trailer-link" href="${h(trailerUrlHref)}">${h(trailerTitle)}</a>`);
+        <span class="ath-trailer-link">
+          <a href="${h(trailerUrlHref)}">${h(trailerTitle)}</a>
+          (<a href="${h(trailerUrl)}">embed</a>)
+        </span>`);
     }
   }))();
 
