@@ -7,7 +7,7 @@
 // @license        MIT
 // @homepageURL    https://github.com/Athari/AthariUserJS
 // @supportURL     https://github.com/Athari/AthariUserJS/issues
-// @version        1.0.0
+// @version        1.1.0
 // @icon           https://www.google.com/s2/favicons?sz=64&domain=ezgif.com
 // @match          https://*.ezgif.com/*
 // @grant          unsafeWindow
@@ -35,7 +35,7 @@
 
   const res = ress(), script = scripts(res);
   const eld = doc => els(doc, {
-    lnkConverters: '#converter-list a',
+    lnkConverters: '.converter-list a',
     ath: {
       selConvFrom: '#ath-conv-from', selConvTo: '#ath-conv-to', btnConvUpdate: '#ath-conv-update',
       lstConverters: "#ath-converters", itmConverter: "#ath-converters li",
@@ -71,6 +71,7 @@
     TIFF: "Tagged Image File Format (.TIF .TIFF)",
     HEIF: "High Efficiency Image File (.HEIF)",
     SVG: "Scalable Vector Graphics (.SVG)",
+    SVGZ: "Scalable Vector Graphics (compressed) (.SVGZ)",
     PNG: "Portable Network Graphics (.PNG)",
     JP2: "JPEG 2000 (.JP2 .J2K .JPM)",
     WEBM: "Web Media (.WEBM)",
@@ -82,8 +83,20 @@
     CSV: "Comma-Separated Values (.CSV)",
     MP3: "MPEG Audio Layer III (.MP3)",
     MP4: "MPEG-4 Video (.MP4)",
+    FLAC: "Free Lossless Audio Codec (.FLAC)",
+    WAV: "Waveform Audio (.WAV)",
+    M4A: "MPEG-4 Audio (.M4A)",
+    OGG: "Ogg Vorbis Compressed Audio (.OGG)",
+    ICO: "Microsoft Windows Icon (.ICO)",
+    LIVEPHOTO: "Apple Live Photo (.LIVP)",
+    AVI: "Audio Video Interleave (.AVI)",
+    FLV: "Flash Video (.FLV)",
+    HEX: "Hex RGB Color (#123456)",
+    RGB: "RGB/HSL/HSV/CMYK Color (rgb(123, 45, 67))",
     SPRITE: "Sprite Sheet",
     SPRITES: "Sprite Sheet",
+    IMAGE: "Image",
+    IMAGES: "Image",
     DATAURI: "Data URI (DATA:)",
   };
   const allTools = {
@@ -92,6 +105,7 @@
       "GIF fix": 'repair',
       "PNG": 'optipng',
       "JPEG": 'optijpeg',
+      "AVIF": 'optiavif',
       "WEBP": 'optiwebp',
       "Video": 'video-compressor',
     },
@@ -227,14 +241,19 @@
     const elDoc = eld(doc);
     const converters = [];
     for (const lnkConv of elDoc.all.lnkConverters) {
-      const [ , convFrom, convTo ] = lnkConv.innerText.trim().match(/^(\S+) to (\S+)$/);
-      converters.push({
-        name: lnkConv.getAttribute('name'),
-        title: lnkConv.getAttribute('title'),
-        href: lnkConv.getAttribute('href'),
-        from: convFrom,
-        to: convTo,
-      });
+      try {
+        const [ , convFrom, convTo, convMode ] = lnkConv.innerText.trim().match(/^(\S+) to (\S+)(?: \((bulk)\))?$/);
+        converters.push({
+          name: lnkConv.getAttribute('name'),
+          title: lnkConv.getAttribute('title'),
+          href: lnkConv.getAttribute('href'),
+          from: convFrom,
+          to: convTo,
+          mode: convMode,
+        });
+      } catch (e) {
+        console.error("Unknown converter kind.", e);
+      }
     }
     opt.converters = converters;
   });
